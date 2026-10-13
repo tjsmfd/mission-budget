@@ -1,8 +1,8 @@
 // Service worker: makes the app open offline.
 // The page itself is fetched fresh when online (so updates show up), with the saved copy as a fallback.
 // Bump VERSION whenever you change icons or the manifest.
-const VERSION = "mb-v1";
-const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icons/apple-touch-icon.png", "./icons/icon-192.png", "./icons/icon-512.png"];
+const VERSION = "mb-v2";
+const CORE = ["./", "./index.html", "./manifest.webmanifest", "./apple-touch-icon.png", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(CORE)).then(() => self.skipWaiting()));
