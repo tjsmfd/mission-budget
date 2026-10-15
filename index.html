@@ -296,6 +296,17 @@ html[data-theme="pro"] .tab[aria-current="page"]{background:var(--accent-tint)}
 /* toasts (with Undo) */
 html[data-theme="pro"] .toast{border-radius:18px;box-shadow:0 12px 30px rgba(0,0,0,.45)}
 html[data-theme="pro"] .toast button{background:none;border:0;color:#C2573A;font-weight:800;margin-left:14px;padding:4px 2px;min-height:28px}
+
+/* ===== Status dropdown (Today) ===== */
+.dd{margin-top:2px}
+.dd>summary{list-style:none;display:flex;align-items:center;gap:10px;min-height:48px;padding:0 14px;border-radius:16px;background:var(--card2);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.dd>summary::-webkit-details-marker{display:none}
+.dd>summary::after{content:"";flex:none;width:8px;height:8px;margin-left:auto;margin-right:3px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg) translateY(-2px);transition:transform .18s}
+.dd[open]>summary::after{transform:rotate(-135deg) translateY(-2px)}
+.dd .sdot{flex:none;width:10px;height:10px;border-radius:50%;background:var(--c);box-shadow:0 0 10px var(--c)}
+.dd .stxt{font-size:14px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dd .schip{flex:none;font-size:11px;font-weight:800;padding:4px 9px;border-radius:999px;background:var(--red-tint);color:var(--red);white-space:nowrap}
+.dd .ddbody{display:flex;flex-direction:column;gap:12px;padding:14px 4px 4px}
 </style>
 </head>
 <body>
@@ -422,7 +433,7 @@ window.LocalDB = (function(){
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>',
   };
 
-  const S = {tab: "today", db: null, status: "loading", plan: null, goals: [], goalsLoaded: false, guide: {done: {}}, accounts: null, billSkip: {}, subsList: [], months: {}, histMonth: monthKey(new Date()), subs: {}, armed: null};
+  const S = {tab: "today", db: null, status: "loading", plan: null, goals: [], goalsLoaded: false, guide: {done: {}}, accounts: null, billSkip: {}, subsList: [], months: {}, histMonth: monthKey(new Date()), subs: {}, armed: null, ddOpen: false};
   const app = document.getElementById("app");
   const root = document.getElementById("sheetRoot");
 
@@ -444,9 +455,9 @@ window.LocalDB = (function(){
   function monthStats(k){
     const tx = S.months[k] || [];
     const spent = {}, bySource = {};
-    let incomeIn = 0, foodSpent = 0, foodN = 0;
+    let incomeIn = 0, foodSpent = 0, foodN = 0, pocketExtra = 0;
     for (const t of tx){
-      if (t.type === "income"){ incomeIn += num(t.amount); const key = t.incomeId && incById(t.incomeId) ? t.incomeId : "other"; bySource[key] = (bySource[key] || 0) + num(t.amount); }
+      if (t.type === "income"){ incomeIn += num(t.amount); if (t.pocket) pocketExtra += num(t.pocket); const key = t.incomeId && incById(t.incomeId) ? t.incomeId : "other"; bySource[key] = (bySource[key] || 0) + num(t.amount); }
       else { spent[t.categoryId] = (spent[t.categoryId] || 0) + num(t.amount); if (t.tag === "food"){ foodSpent += num(t.amount); foodN++; } }
     }
     let spendBudget = 0, spendSpent = 0;
@@ -470,13 +481,14 @@ window.LocalDB = (function(){
       else if (role === "bill"){ if (!(S.billSkip[k] || []).includes(c.id)) billsDue += left; }
       else if (c.group === "Needs") needsDue += left;
     }
+    funBudget += pocketExtra; // side income you chose to spend this month
     const now = new Date();
     const dim = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const daysLeft = dim - now.getDate() + 1;
     const left = spendBudget - spendSpent;
     const funCover = coverOver ? overTotal : 0;
     const funLeft = funBudget - funSpent - funCover;
-    return {overs, overTotal, coverOver, funCover, tx, spent, bySource, incomeIn, spendBudget, spendSpent, left, daysLeft, safe: daysLeft > 0 ? Math.max(0, left) / daysLeft : 0, saved, cash: incomeIn - saved - spendSpent, funBudget, funSpent, funLeft, funDaily: daysLeft > 0 ? Math.max(0, funLeft) / daysLeft : 0, billsDue, needsDue, foodSpent, foodN};
+    return {pocketExtra, overs, overTotal, coverOver, funCover, tx, spent, bySource, incomeIn, spendBudget, spendSpent, left, daysLeft, safe: daysLeft > 0 ? Math.max(0, left) / daysLeft : 0, saved, cash: incomeIn - saved - spendSpent, funBudget, funSpent, funLeft, funDaily: daysLeft > 0 ? Math.max(0, funLeft) / daysLeft : 0, billsDue, needsDue, foodSpent, foodN};
   }
 
   // ---------------- render ----------------
@@ -751,7 +763,7 @@ window.LocalDB = (function(){
     }
     const planTotal = cats().filter((c) => c.group === "Needs" || c.group === "Wants").reduce((s, c) => s + num(c.budget), 0) + goalsMonthly();
     const gap = round2(planTotal - pays);
-    const extra = m.bySource.other || 0;
+    const extra = Math.max(0, (m.bySource.other || 0) - (m.pocketExtra || 0));
     const dd = (m.tx || []).filter((t) => t.type === "income" && /door\s*dash/i.test(t.note || "")).reduce((s, t) => s + num(t.amount), 0);
     const ds = (d) => d.toLocaleString("en-US", {month: "short", day: "numeric"});
     const crunch = fc && fc.low < fc.cushion ? round2(fc.cushion - fc.low) : 0;
@@ -789,6 +801,19 @@ window.LocalDB = (function(){
       else if (cover > 0) check = `<span class="sub">Spend up to this today and your balance still stays above your ${money(fc.cushion, 0)} cushion at its lowest point (${dshort(fc.lowD)}). <span style="color:var(--warn)">${money(m.funLeft - spendNow)} more opens up as paychecks land.</span></span>`;
       else check = `<span class="sub" style="color:var(--red)">Your balance is projected to dip to ${money(fc.low)} on ${dshort(fc.lowD)} before your next paycheck, below your ${money(fc.cushion, 0)} cushion. Pocket money opens up after payday.</span>`;
     }
+    let dd = "";
+    if (!loading && (m.funBudget > 0 || m.overs.length)){
+      let tone = "muted", label = m.funBudget > 0 ? "Update balance" : "Heads-up";
+      if (m.funBudget > 0 && fc){
+        if (cover >= m.funLeft){ tone = "ok"; label = "Covered for 30d"; }
+        else if (cover > 0){ tone = "warn"; label = "More after payday"; }
+        else { tone = "red"; label = "Dips low " + dshort(fc.lowD); }
+      }
+      const chip = m.overs.length ? `<span class="schip">${m.overs.length} over budget</span>` : "";
+      const overBox = m.overs.length ? `<div class="overflag" role="note"><b>Over budget this month${m.coverOver ? " · taken from pocket money" : ""}</b>${m.overs.map((o) => `<span class="orow"><span>${esc(o.name)}</span><span>+${money(o.amount)}</span></span>`).join("")}<span class="ofoot">${m.coverOver ? `Pocket money is ${money(m.overTotal)} lower so your plan stays balanced.` : `Not taken from pocket money (turned off in Plan). Keep ${money(m.overTotal)} in mind.`}</span></div>` : "";
+      const food = m.funBudget > 0 ? `<span class="sub">So far this month: ate out ${m.foodN}× (${money(m.foodSpent)}) · random ${money(Math.max(0, m.funSpent - m.foodSpent))}</span>` : "";
+      dd = `<details class="dd" data-dd ${S.ddOpen ? "open" : ""}><summary><span class="sdot" style="--c:var(--${tone})"></span><span class="stxt">${label}</span>${chip}</summary><div class="ddbody">${check}${overBox}${food}</div></details>`;
+    }
     let html = `
       <div class="headrow"><div class="head"><span class="date">${esc(now.toLocaleString("en-US", {weekday: "long", month: "short", day: "numeric"}))}</span><h1>${greeting()}</h1></div>${helpBtn()}</div>
       ${loading ? "" : notices() + lastLoggedNotice(m)}
@@ -798,12 +823,10 @@ window.LocalDB = (function(){
           <div class="txt">
             <span class="sub" style="font-size:14px">Free to spend right now</span>
             <span class="big ${m.funLeft < 0 ? "neg" : ""}">${loading ? "—" : money(m.funLeft < 0 ? m.funLeft : spendNow)}</span>
-            <span class="sub">${loading ? "Loading your budget…" : m.funBudget <= 0 ? "Mark a category as Pocket money in Plan" : m.funLeft < 0 ? "Over your pocket money by " + money(-m.funLeft) : money(m.funLeft) + " pocket money budget left this month · " + m.daysLeft + (m.daysLeft === 1 ? " day" : " days") + " to go"}</span>
+            <span class="sub">${loading ? "Loading your budget…" : m.funBudget <= 0 ? "Mark a category as Pocket money in Plan" : m.funLeft < 0 ? "Over your pocket money by " + money(-m.funLeft) : money(m.funLeft) + " pocket money budget left this month" + (m.pocketExtra ? " (incl. " + money(m.pocketExtra, 0) + " side income)" : "") + " · " + m.daysLeft + (m.daysLeft === 1 ? " day" : " days") + " to go"}</span>
           </div>
         </div>
-        ${check}
-        ${!loading && m.overs.length ? `<div class="overflag" role="note"><b>Over budget this month${m.coverOver ? " · taken from pocket money" : ""}</b>${m.overs.map((o) => `<span class="orow"><span>${esc(o.name)}</span><span>+${money(o.amount)}</span></span>`).join("")}<span class="ofoot">${m.coverOver ? `Pocket money is ${money(m.overTotal)} lower so your plan stays balanced.` : `Not taken from pocket money (turned off in Plan). Keep ${money(m.overTotal)} in mind.`}</span></div>` : ""}
-        ${!loading && m.funBudget > 0 ? `<span class="sub" style="padding-top:8px;border-top:1px solid var(--track)">So far this month: ate out ${m.foodN}× (${money(m.foodSpent)}) · random ${money(Math.max(0, m.funSpent - m.foodSpent))}</span>` : ""}
+        ${dd}
       </section>
       ${loading ? "" : doorDashCard(m, fc, k)}
       ${fc && (fc.missing.length || fc.paysMissing.length) ? `<div class="notice soft"><span>Your forecast is missing ${esc([...fc.missing.map((x) => x + " due day"), ...fc.paysMissing.map((x) => x + " payday")].join(", "))}. Add it in Plan so Free to spend is accurate.</span><button type="button" data-go="plan">Plan</button></div>` : ""}
@@ -1192,6 +1215,7 @@ window.LocalDB = (function(){
     ["var(--accent)", "<b>Log it when you pay.</b> Or at the 9 PM reminder: open your bank app and log anything you missed today."],
     ["var(--accent)", "<b>Use the real amount.</b> What left your account, with tax and tip."],
     ["var(--ok)", "<b>Paychecks: log take-home pay.</b> The amount that hits your bank, not the gross number on the stub. Pick the source so the app can track stipend vs. Dick's."],
+    ["var(--accent)", "<b>Side income you want to spend now?</b> Log it as Income, Paid by Other. A note that says DoorDash adds it to pocket money automatically. Otherwise tap All, 70%, or type an amount. It only counts for that month."],
     ["var(--savings)", "<b>Saving isn't spending.</b> Moving money to savings goes through the paycheck split or Goals → Add money. Don't log it as an expense."],
     ["var(--savings)", "<b>Buying the thing you saved for?</b> Goals → Use money. Don't also log it as an expense, or it counts twice."],
     ["var(--savings)", "<b>Set-asides are for regular stuff you buy now and then</b> (personal care, haircuts, car maintenance). Money goes in with each paycheck split; when you buy, use Goals → Use money instead of logging an expense. Whatever you don't spend carries over."],
@@ -1258,7 +1282,7 @@ window.LocalDB = (function(){
   }
 
   // ----- change history for edited entries -----
-  const txSnap = (t) => ({date: t.date, amount: num(t.amount), type: t.type, categoryId: t.categoryId || null, incomeId: t.incomeId || null, note: t.note || "", tag: t.tag || null});
+  const txSnap = (t) => ({date: t.date, amount: num(t.amount), type: t.type, categoryId: t.categoryId || null, incomeId: t.incomeId || null, note: t.note || "", tag: t.tag || null, pocket: num(t.pocket) || 0});
   function describeTx(s){
     const c = catById(s.categoryId), src = incById(s.incomeId);
     return [
@@ -1266,6 +1290,7 @@ window.LocalDB = (function(){
       ["Type", s.type === "income" ? "Income" : "Expense"],
       [s.type === "income" ? "Paid by" : "Category", s.type === "income" ? (src ? src.name : "Other") : (c ? c.name : "Deleted category")],
       ...(s.tag ? [["Kind", s.tag === "food" ? "Ate out" : "Random"]] : []),
+      ...(s.pocket ? [["To pocket money", money(num(s.pocket))]] : []),
       ["Date", prettyDate(s.date, {month: "short", day: "numeric", year: "numeric"})],
       ["Note", s.note || "—"],
     ];
@@ -1299,6 +1324,10 @@ window.LocalDB = (function(){
       <div class="pick" id="catPick">${catChips}</div>
       <div id="tagPick" hidden><div class="chiphead">What was it?</div><div class="typetog" role="group" aria-label="Kind of pocket money purchase"><button type="button" data-tag="food">Ate out</button><button type="button" data-tag="random">Random</button></div></div>
       <div class="pick" id="srcPick" hidden>${srcChips}<p class="hint" style="margin:0">Log take-home pay: the amount that hit your bank.</p></div>
+      <div id="pocketPick" hidden><div class="chiphead">Add to pocket money this month</div>
+        <div class="row2"><div class="chips"><button type="button" class="chip" data-pk="all" aria-pressed="false" style="--gc:var(--accent)">All</button><button type="button" class="chip" data-pk="70" aria-pressed="false" style="--gc:var(--accent)">70%</button><button type="button" class="chip" data-pk="0" aria-pressed="false" style="--gc:var(--muted)">None</button></div>
+          <input class="field num" id="pocketAmt" inputmode="decimal" autocomplete="off" aria-label="Amount to add to pocket money" placeholder="$0"></div>
+        <p class="hint" style="margin:8px 0 0">Raises Free to spend right away. Counts for this month only, so your plan doesn't change. Notes that say DoorDash fill this in for you.</p></div>
       <div class="row2">
         <div><label class="lab" for="note">Note</label><input class="field" id="note" placeholder="Optional" autocomplete="off" value="${ex ? esc(ex.note || "") : ""}"></div>
         <div><label class="lab" for="date">Date</label><input class="field" id="date" type="date" value="${ex ? esc(ex.date) : today}"></div>
@@ -1307,10 +1336,24 @@ window.LocalDB = (function(){
       ${ex ? '<button type="button" class="dangerbtn" id="delTx">Delete transaction</button>' : ""}
       ${ex && (ex.edits || []).length ? changeHistoryHTML(ex.edits, txSnap(ex), describeTx) : ""}`);
     const amt = el.querySelector("#amt"), saveBtn = el.querySelector("#saveTx");
+    const noteEl = el.querySelector("#note"), pk = el.querySelector("#pocketAmt");
+    st.pkTouched = !!ex;
+    if (ex && ex.pocket) pk.value = num(ex.pocket);
+    const autoPk = () => {
+      if (st.pkTouched) return;
+      const a = round2(num(amt.value));
+      pk.value = (st.type === "income" && st.src === "other" && /door\s*dash/i.test(noteEl.value) && a > 0) ? a : "";
+    };
     const valid = () => num(amt.value) > 0 && (st.type === "income" ? !!st.src : !!st.cat);
     const sync = () => {
+      autoPk();
+      const showPk = st.type === "income" && st.src === "other";
+      const a = round2(num(amt.value)), pv = Math.min(round2(num(pk.value)), a || Infinity);
+      el.querySelector("#pocketPick").hidden = !showPk;
+      el.querySelectorAll("[data-pk]").forEach((b) => b.setAttribute("aria-pressed", String(a > 0 && (b.dataset.pk === "all" ? pv === a : b.dataset.pk === "70" ? pv === round2(a * 0.7) : pv <= 0))));
+      const allToPocket = showPk && a > 0 && pv >= a;
       saveBtn.disabled = !valid();
-      saveBtn.textContent = ex ? "Save changes" : st.type === "income" ? "Save and plan it" : "Save";
+      saveBtn.textContent = ex ? "Save changes" : allToPocket ? "Save to pocket money" : st.type === "income" ? "Save and plan it" : "Save";
       el.querySelectorAll("[data-type]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.type === st.type));
       el.querySelector("#catPick").hidden = st.type === "income";
       el.querySelector("#srcPick").hidden = st.type !== "income";
@@ -1321,6 +1364,13 @@ window.LocalDB = (function(){
     };
     el.querySelectorAll("[data-tag]").forEach((b) => b.onclick = () => { st.tag = b.dataset.tag; sync(); });
     amt.addEventListener("input", sync);
+    noteEl.addEventListener("input", sync);
+    pk.addEventListener("input", () => { st.pkTouched = true; sync(); });
+    el.querySelectorAll("[data-pk]").forEach((b) => b.onclick = () => {
+      const a = round2(num(amt.value)); st.pkTouched = true;
+      pk.value = b.dataset.pk === "all" ? (a || "") : b.dataset.pk === "70" ? (a ? round2(a * 0.7) : "") : "";
+      sync();
+    });
     el.querySelectorAll("[data-type]").forEach((b) => b.onclick = () => { st.type = b.dataset.type; sync(); });
     el.querySelectorAll("[data-chip]").forEach((b) => b.onclick = () => { st.cat = b.dataset.chip; sync(); });
     el.querySelectorAll("[data-src]").forEach((b) => b.onclick = () => { st.src = b.dataset.src; sync(); });
@@ -1329,6 +1379,7 @@ window.LocalDB = (function(){
       const inc = st.type === "income";
       const t = {id: ex ? ex.id : uid(), date: el.querySelector("#date").value || today, amount: round2(num(amt.value)), type: st.type, categoryId: inc ? null : st.cat, incomeId: inc && st.src !== "other" ? st.src : null, note: el.querySelector("#note").value.trim(), ts: ex ? (ex.ts || new Date().toISOString()) : new Date().toISOString()};
       if (isFun()) t.tag = st.tag;
+      if (inc && st.src === "other"){ const pv = Math.min(round2(num(pk.value)), t.amount); if (pv > 0) t.pocket = pv; }
       saveBtn.disabled = true; saveBtn.textContent = "Saving…";
       if (ex){
         const before = txSnap(ex), after = txSnap(t);
@@ -1341,7 +1392,11 @@ window.LocalDB = (function(){
       }
       if (await addTx(t)){
         close();
-        if (inc) openSplit(t);
+        if (inc){
+          const rest = round2(t.amount - (t.pocket || 0));
+          if (t.pocket && rest <= 0.004) toast("Logged " + money(t.amount) + " · added to pocket money");
+          else openSplit(t.pocket ? {...t, amount: rest} : t);
+        }
         else { const c = catById(t.categoryId); toast("Logged " + money(t.amount) + " · " + (inc ? "Income" : t.tag === "food" ? "Ate out" : c ? c.name : "")); }
       } else sync();
     };
@@ -1734,6 +1789,7 @@ window.LocalDB = (function(){
     if (cr){ const c = draft.categories.find((x) => x.id === cr.dataset.cat); if (c) c[f] = e.target.value; }
     queueSave();
   };
+  app.addEventListener("toggle", (e) => { const d = e.target; if (d && d.matches && d.matches("details[data-dd]")) S.ddOpen = d.open; }, true);
   app.addEventListener("input", onEdit);
   app.addEventListener("change", (e) => { if (e.target.tagName === "SELECT") onEdit(e); else if (e.target.id === "coverOver" && draft){ draft.coverOver = e.target.checked; queueSave(); } });
 
