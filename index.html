@@ -3,17 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Mission Budget</title>
+<title>Rosewood</title>
 <script>try{var _t=localStorage.getItem("mb-theme");document.documentElement.setAttribute("data-theme",_t==="classic"||_t==="pro"?_t:"sl")}catch(e){document.documentElement.setAttribute("data-theme","sl")}</script>
-<meta name="mb-build" content="1792354282">
+<meta name="mb-build" content="1792357226">
 <script>
 /* Auto-update: on open and on return to the app, check GitHub for a newer build and reload into it.
    Skips while a sheet is open so it never interrupts you mid-entry. */
-(function(){var B="1792354282";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
+(function(){var B="1792357226";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
 function chk(){fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){var m=t.match(/name="mb-build" content="(\d+)"/);if(!m||m[1]===B||Number(m[1])<Number(B))return;if(busy())return;try{if(sessionStorage.getItem("mb_rl")===m[1])return;sessionStorage.setItem("mb_rl",m[1])}catch(e){}location.replace(location.pathname+"?v="+m[1])}).catch(function(){})}
 window.addEventListener("load",function(){setTimeout(chk,1500)});document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();
 </script>
-<meta name="theme-color" content="#17181C">
+<meta name="theme-color" content="#100E0F">
 <meta name="color-scheme" content="dark">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icon-192.png">
@@ -21,7 +21,7 @@ window.addEventListener("load",function(){setTimeout(chk,1500)});document.addEve
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Mission">
+<meta name="apple-mobile-web-app-title" content="Rosewood">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap">
 <style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{background:#17181C;scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;min-height:100%}img{max-width:100%}</style>
 <style>
@@ -305,36 +305,36 @@ html:is([data-theme="pro"],[data-theme="sl"]) .tab[aria-current="page"]{backgrou
 html:is([data-theme="pro"],[data-theme="sl"]) .toast{border-radius:18px;box-shadow:0 12px 30px rgba(0,0,0,.45)}
 html:is([data-theme="pro"],[data-theme="sl"]) .toast button{background:none;border:0;color:#C2573A;font-weight:800;margin-left:14px;padding:4px 2px;min-height:28px}
 
-/* ===== S ≠ L THEME =====
-   The violet family from the "Surviving isn't living" app: near-black, violet-to-lilac gradients, flat tab bar with a glowing underline,
+/* ===== ROSEWOOD THEME (key "sl") =====
+   Rose mixed with graphite: warm graphite surfaces, muted dusty-rose gradients, flat tab bar with a glowing underline,
    uppercase eyebrow labels. Builds on the Pro rules above. Switch back any time in Guide > Appearance. */
 html[data-theme="sl"]{
-  --bg:#050506; --card:#141416; --card2:#1C1C20; --track:#222226; --fg:#F5F5F5; --muted:#8E8E95;
-  --accent:#B79BFF; --accent-ink:#FFFFFF; --accent-tint:rgba(106,75,255,.18); --wants:#C08BFF;
-  --g-accent:linear-gradient(135deg,#C08BFF 0%,#8A6BFF 100%);
-  --g-btn:linear-gradient(135deg,#6A4BFF 0%,#C08BFF 100%);
-  --g-card:linear-gradient(160deg,#18181B 0%,#111113 100%);
+  --bg:#100E0F; --card:#1B1819; --card2:#2A2527; --track:#353031; --fg:#F5F0F1; --muted:#A09698;
+  --accent:#D2A0AE; --accent-ink:#24100F; --accent-tint:rgba(168,102,122,.22); --wants:#CE93A4;
+  --g-accent:linear-gradient(135deg,#E3BFC8 0%,#A8667A 100%);
+  --g-btn:linear-gradient(135deg,#DDB6C0 0%,#A8667A 100%);
+  --g-card:linear-gradient(160deg,#1F1B1D 0%,#171415 100%);
   --edge:inset 0 0 0 1px rgba(255,255,255,.08);
   --lift:0 8px 24px rgba(0,0,0,.35);
-  --rg1:#6A4BFF; --rg2:#C08BFF;
+  --rg1:#A8667A; --rg2:#E3BFC8;
 }
-html[data-theme="sl"],html[data-theme="sl"] body{background-color:#050506}
-html[data-theme="sl"] body{background-image:radial-gradient(560px 380px at 0% -110px,rgba(106,75,255,.26),rgba(5,5,6,0) 70%),radial-gradient(480px 340px at 100% -60px,rgba(255,255,255,.07),rgba(5,5,6,0) 70%)}
-html[data-theme="sl"] .card:has(.hero){background:radial-gradient(130% 150% at 0% 0%,rgba(106,75,255,.30) 0%,rgba(106,75,255,.08) 45%,rgba(20,20,22,0) 75%),linear-gradient(160deg,#18181B,#0F0F11)}
-html[data-theme="sl"] .sheet{background:linear-gradient(180deg,#1A1A1E 0%,#111113 100%)}
-html[data-theme="sl"] :is(.pillbtn,.notice button,.save,.typetog button[aria-pressed="true"],.seg button[aria-pressed="true"]){background:var(--g-btn);color:#fff;box-shadow:0 4px 14px rgba(106,75,255,.3)}
-html[data-theme="sl"] .fab{background:var(--g-btn);color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.5),0 6px 20px rgba(106,75,255,.4)}
+html[data-theme="sl"],html[data-theme="sl"] body{background-color:#100E0F}
+html[data-theme="sl"] body{background-image:radial-gradient(560px 380px at 0% -110px,rgba(168,102,122,.16),rgba(16,14,15,0) 70%),radial-gradient(480px 340px at 100% -60px,rgba(255,255,255,.04),rgba(16,14,15,0) 70%)}
+html[data-theme="sl"] .card:has(.hero){background:radial-gradient(130% 150% at 0% 0%,rgba(168,102,122,.24) 0%,rgba(168,102,122,.06) 45%,rgba(23,20,21,0) 75%),linear-gradient(160deg,#241E21,#141112)}
+html[data-theme="sl"] .sheet{background:linear-gradient(180deg,#201B1D 0%,#141112 100%)}
+html[data-theme="sl"] :is(.pillbtn,.notice button,.save,.typetog button[aria-pressed="true"],.seg button[aria-pressed="true"]){background:var(--g-btn);color:#24100F;box-shadow:0 4px 14px rgba(168,102,122,.25)}
+html[data-theme="sl"] .fab{background:var(--g-btn);color:#24100F;box-shadow:0 8px 24px rgba(0,0,0,.5),0 6px 20px rgba(168,102,122,.3)}
 html[data-theme="sl"] .chip[aria-pressed="true"]{background:var(--accent-tint)}
-html[data-theme="sl"] .notice:not(.soft){background:linear-gradient(135deg,rgba(106,75,255,.20) 0%,rgba(255,255,255,.03) 80%);border:1px solid rgba(106,75,255,.3);color:var(--accent);box-shadow:none}
-html[data-theme="sl"] .ring .rp{filter:drop-shadow(0 0 5px rgba(192,139,255,.5))}
+html[data-theme="sl"] .notice:not(.soft){background:linear-gradient(135deg,rgba(168,102,122,.22) 0%,rgba(255,255,255,.03) 80%);border:1px solid rgba(168,102,122,.35);color:var(--accent);box-shadow:none}
+html[data-theme="sl"] .ring .rp{filter:drop-shadow(0 0 5px rgba(210,160,174,.45))}
 html[data-theme="sl"] :is(.stat .l,.lab,.sechead>span){text-transform:uppercase;letter-spacing:.08em;font-size:11px;font-weight:800}
 /* flat tab bar with a glowing underline */
-html[data-theme="sl"] .nav{padding-top:26px;background:linear-gradient(180deg,rgba(5,5,6,0) 0%,rgba(5,5,6,.92) 38%,var(--bg) 100%)}
+html[data-theme="sl"] .nav{padding-top:26px;background:linear-gradient(180deg,rgba(16,14,15,0) 0%,rgba(16,14,15,.92) 38%,var(--bg) 100%)}
 html[data-theme="sl"] .nav .in{background:none;box-shadow:none;border-radius:0;-webkit-backdrop-filter:none;backdrop-filter:none;height:54px}
 html[data-theme="sl"] .tab{position:relative;min-height:50px;font-size:10.5px}
 html[data-theme="sl"] .tab[aria-current="page"]{background:none;color:var(--fg)}
-html[data-theme="sl"] .tab[aria-current="page"] svg{color:#C08BFF}
-html[data-theme="sl"] .tab[aria-current="page"]::after{content:"";position:absolute;bottom:0;left:50%;width:20px;height:2.5px;margin-left:-10px;border-radius:2px;background:#C08BFF;box-shadow:0 0 8px rgba(192,139,255,.8)}
+html[data-theme="sl"] .tab[aria-current="page"] svg{color:#D2A0AE}
+html[data-theme="sl"] .tab[aria-current="page"]::after{content:"";position:absolute;bottom:0;left:50%;width:20px;height:2.5px;margin-left:-10px;border-radius:2px;background:#D2A0AE;box-shadow:0 0 8px rgba(210,160,174,.8)}
 
 /* ===== Status dropdown (Today) ===== */
 .dd{margin-top:2px}
@@ -1290,11 +1290,11 @@ window.LocalDB = (function(){
     const done = S.guide.done || {};
     const n = START_STEPS.filter(([k]) => done[k]).length;
     app.innerHTML = `
-      <div class="headrow"><div class="head"><span class="date">Guide</span><h1>How to use Mission Budget</h1></div><button type="button" class="iconbtn" data-go="today" aria-label="Back to Today">${IC.x}</button></div>
+      <div class="headrow"><div class="head"><span class="date">Guide</span><h1>How to use Rosewood</h1></div><button type="button" class="iconbtn" data-go="today" aria-label="Back to Today">${IC.x}</button></div>
       <details class="gd" open><summary>Appearance</summary><div class="gbody">
         <p>Pick the look. This only changes colors and styling. Your data, plan and backups are not affected, and you can switch back any time.</p>
-        <div class="seg" role="group" aria-label="Theme"><button type="button" data-theme-set="sl" aria-pressed="${curTheme() === "sl"}">S ≠ L</button><button type="button" data-theme-set="pro" aria-pressed="${curTheme() === "pro"}">Pro</button><button type="button" data-theme-set="classic" aria-pressed="${curTheme() === "classic"}">Classic</button></div>
-        <p class="hint">S ≠ L matches your Surviving isn't living app: violet gradients and a flat tab bar. Pro is the peach glass look. Classic is the original. This choice is saved on this device.</p>
+        <div class="seg" role="group" aria-label="Theme"><button type="button" data-theme-set="sl" aria-pressed="${curTheme() === "sl"}">Rosewood</button><button type="button" data-theme-set="pro" aria-pressed="${curTheme() === "pro"}">Pro</button><button type="button" data-theme-set="classic" aria-pressed="${curTheme() === "classic"}">Classic</button></div>
+        <p class="hint">Rosewood is rose mixed with graphite, with a flat tab bar. Pro is the peach glass look. Classic is the original. This choice is saved on this device.</p>
       </div></details>
       <details class="gd" open><summary>Start from today<span class="progressline" style="margin-left:auto">${n} of ${START_STEPS.length}</span></summary>
         <div class="gbody">${START_STEPS.map(([k, t, d], i) => `<button type="button" class="step" data-step="${k}" aria-pressed="${!!done[k]}"><span class="check">${IC.check}</span><span><div class="st">${i + 1}. ${t}</div><div class="sd">${d}</div></span></button>`).join("")}</div>
@@ -1715,8 +1715,8 @@ window.LocalDB = (function(){
     inp.onchange = async () => {
       const f = inp.files && inp.files[0]; if (!f) return;
       let data;
-      try { data = JSON.parse(await f.text()); } catch (e){ toast("That file isn't a Mission Budget backup."); return; }
-      if (!data || data.app !== "mission-budget" || typeof data.docs !== "object"){ toast("That file isn't a Mission Budget backup."); return; }
+      try { data = JSON.parse(await f.text()); } catch (e){ toast("That file isn't a Rosewood backup."); return; }
+      if (!data || data.app !== "mission-budget" || typeof data.docs !== "object"){ toast("That file isn't a Rosewood backup."); return; }
       const when = data.exportedAt ? new Date(data.exportedAt).toLocaleString("en-US", {month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit"}) : "unknown date";
       if (!S.empty && !confirm("Replace everything in the app with the backup from " + when + "? This can't be undone.")) return;
       try {
