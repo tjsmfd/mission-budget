@@ -1,7 +1,7 @@
 // Service worker: makes the app open offline.
 // The page itself is fetched fresh when online (so updates show up), with the saved copy as a fallback.
 // Bump VERSION whenever you change icons or the manifest.
-const VERSION = "mb-v6";
+const VERSION = "mb-v7";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./apple-touch-icon.png", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (e) => {
@@ -19,6 +19,7 @@ self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
+  if (url.searchParams.has("check")) return; // auto-update check always goes to the network
 
   // The app page: network first, fall back to the saved copy when offline.
   if (req.mode === "navigate") {

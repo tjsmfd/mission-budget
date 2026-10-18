@@ -6,13 +6,15 @@ Personal budgeting PWA. All data is stored on the device (IndexedDB). This repo 
 - `index.html`: the app
 - `manifest.webmanifest`: app name, icon, colors (what makes it installable)
 - `sw.js`: service worker (lets the app open offline)
-- `icons/`: home screen icons
+- `icon-*.png`, `apple-touch-icon.png`: home screen icons
 
 **Never upload a `mission-budget-backup-*.json` file here.** Backups hold your real data.
 
-## Updating the app later
-1. Replace `index.html` in the repo with the new version (Add file → Upload files → Commit).
-2. Wait about 1 minute for GitHub Pages to redeploy.
-3. Open the app on your phone while online, close it, and open it again. The new version loads, and your data stays.
+## Updating the app
+Updates are pushed here by Claude. The app checks GitHub every time you open it or return to it, and reloads into the newest build by itself (it waits if a sheet is open). Your data is never touched.
 
-If you change the icons or the manifest, also change `VERSION` in `sw.js` (e.g. `mb-v1` → `mb-v2`).
+Last updated: Oct 18, 2026 · 4:04 PM ET.
+
+If an update doesn't show: give GitHub about a minute, then fully close and reopen the app once.
+
+If you change the icons or the manifest, bump `VERSION` in `sw.js`. Run `./stamp.sh` before every push.
