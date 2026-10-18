@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Rosewood</title>
 <script>try{var _t=localStorage.getItem("mb-theme");document.documentElement.setAttribute("data-theme",_t==="classic"||_t==="pro"?_t:"sl")}catch(e){document.documentElement.setAttribute("data-theme","sl")}</script>
-<meta name="mb-build" content="1792357226">
+<meta name="mb-build" content="1792363684">
 <script>
 /* Auto-update: on open and on return to the app, check GitHub for a newer build and reload into it.
    Skips while a sheet is open so it never interrupts you mid-entry. */
-(function(){var B="1792357226";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
+(function(){var B="1792363684";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
 function chk(){fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){var m=t.match(/name="mb-build" content="(\d+)"/);if(!m||m[1]===B||Number(m[1])<Number(B))return;if(busy())return;try{if(sessionStorage.getItem("mb_rl")===m[1])return;sessionStorage.setItem("mb_rl",m[1])}catch(e){}location.replace(location.pathname+"?v="+m[1])}).catch(function(){})}
 window.addEventListener("load",function(){setTimeout(chk,1500)});document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();
 </script>
@@ -576,8 +576,8 @@ window.LocalDB = (function(){
 
   function ringSVG(p){
     const C = 2 * Math.PI * 34, used = Math.max(0, Math.min(1, p));
-    const color = p > 1 ? "var(--red)" : p >= 0.9 ? "var(--warn)" : "var(--accent)";
-    const accentRing = !(p > 1) && !(p >= 0.9), pro = isPro() && accentRing;
+    const color = p >= 0.9 ? "var(--red)" : p >= 0.7 ? "var(--warn)" : "var(--accent)";
+    const accentRing = p < 0.7, pro = isPro() && accentRing;
     return `<svg class="ring" role="img" aria-label="${Math.round(p * 100)}% of monthly spending used" width="84" height="84" viewBox="0 0 84 84">
       <defs><linearGradient id="ringG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--rg1,#FFCB9B)"/><stop offset="1" style="stop-color:var(--rg2,#EA7C93)"/></linearGradient></defs>
       <circle cx="42" cy="42" r="34" fill="none" stroke="var(--track)" stroke-width="9"/>
