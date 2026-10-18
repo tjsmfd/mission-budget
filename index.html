@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Mission Budget</title>
-<script>try{var _t=localStorage.getItem("mb-theme");document.documentElement.setAttribute("data-theme",_t==="classic"?"classic":"pro")}catch(e){document.documentElement.setAttribute("data-theme","pro")}</script>
-<meta name="mb-build" content="1792353886">
+<script>try{var _t=localStorage.getItem("mb-theme");document.documentElement.setAttribute("data-theme",_t==="classic"||_t==="pro"?_t:"sl")}catch(e){document.documentElement.setAttribute("data-theme","sl")}</script>
+<meta name="mb-build" content="1792354282">
 <script>
 /* Auto-update: on open and on return to the app, check GitHub for a newer build and reload into it.
    Skips while a sheet is open so it never interrupts you mid-entry. */
-(function(){var B="1792353886";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
+(function(){var B="1792354282";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
 function chk(){fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){var m=t.match(/name="mb-build" content="(\d+)"/);if(!m||m[1]===B||Number(m[1])<Number(B))return;if(busy())return;try{if(sessionStorage.getItem("mb_rl")===m[1])return;sessionStorage.setItem("mb_rl",m[1])}catch(e){}location.replace(location.pathname+"?v="+m[1])}).catch(function(){})}
 window.addEventListener("load",function(){setTimeout(chk,1500)});document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();
 </script>
@@ -240,11 +240,11 @@ label.lab{font-size:13px;font-weight:600;color:var(--muted);display:block;margin
 .toast{white-space:normal}
 
 /* ===== PRO THEME =====
-   Everything below is scoped to html[data-theme="pro"]. Delete this block (or tap Classic in Guide > Appearance) to return to the original look.
+   Everything below is scoped to html:is([data-theme="pro"],[data-theme="sl"]). Delete this block (or tap Classic in Guide > Appearance) to return to the original look.
    Patterns borrowed: layered navy-tinted surfaces with no borders and 90%-white text (Copilot), a bold gradient hero number (Cash App / Revolut),
    direction-colored charts (Robinhood), glowing goal progress (Monzo pots / Monarch), glass floating nav + undo toasts (Revolut / Apple),
    semantic colors that never change meaning (Copilot / YNAB). */
-html[data-theme="pro"]{
+html:is([data-theme="pro"],[data-theme="sl"]){
   --bg:#0A0B12; --card:#15171F; --card2:#1F212B; --track:#262935; --fg:#E9EAF0; --muted:#8B91A5;
   --accent:#F4B27F; --accent-ink:#17110C; --accent-tint:rgba(244,178,127,.13);
   --needs:#6EA8FF; --wants:#B494FF; --savings:#46DB9B;
@@ -255,55 +255,86 @@ html[data-theme="pro"]{
   --edge:inset 0 1px 0 rgba(255,255,255,.06);
   --lift:0 10px 28px rgba(0,0,0,.30);
 }
-html[data-theme="pro"],html[data-theme="pro"] body{background-color:#0A0B12}
-html[data-theme="pro"] body{background-image:radial-gradient(120% 55% at 50% -8%,rgba(120,110,200,.20) 0%,rgba(10,11,18,0) 62%),radial-gradient(70% 40% at 100% 0%,rgba(244,162,124,.10) 0%,rgba(10,11,18,0) 70%);background-repeat:no-repeat}
-html[data-theme="pro"] h1{letter-spacing:-.03em}
-html[data-theme="pro"] h2{letter-spacing:-.01em}
+html:is([data-theme="pro"],[data-theme="sl"]),html:is([data-theme="pro"],[data-theme="sl"]) body{background-color:#0A0B12}
+html:is([data-theme="pro"],[data-theme="sl"]) body{background-image:radial-gradient(120% 55% at 50% -8%,rgba(120,110,200,.20) 0%,rgba(10,11,18,0) 62%),radial-gradient(70% 40% at 100% 0%,rgba(244,162,124,.10) 0%,rgba(10,11,18,0) 70%);background-repeat:no-repeat}
+html:is([data-theme="pro"],[data-theme="sl"]) h1{letter-spacing:-.03em}
+html:is([data-theme="pro"],[data-theme="sl"]) h2{letter-spacing:-.01em}
 
 /* surfaces: lighter as they rise, separated by light not borders */
-html[data-theme="pro"] :is(.card,.stat,.catrow,.daycard,.goal,.pcard,details.gd,.notice.soft){background:var(--g-card);box-shadow:var(--edge),var(--lift)}
-html[data-theme="pro"] .catrow:active{background:var(--card2)}
-html[data-theme="pro"] .totals,html[data-theme="pro"] .field{background:var(--card2)}
-html[data-theme="pro"] .sheet{background:linear-gradient(180deg,#1D202A 0%,#14161D 100%);box-shadow:0 -12px 40px rgba(0,0,0,.5),var(--edge)}
-html[data-theme="pro"] .scrim{background:rgba(5,6,10,.66);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+html:is([data-theme="pro"],[data-theme="sl"]) :is(.card,.stat,.catrow,.daycard,.goal,.pcard,details.gd,.notice.soft){background:var(--g-card);box-shadow:var(--edge),var(--lift)}
+html:is([data-theme="pro"],[data-theme="sl"]) .catrow:active{background:var(--card2)}
+html:is([data-theme="pro"],[data-theme="sl"]) .totals,html:is([data-theme="pro"],[data-theme="sl"]) .field{background:var(--card2)}
+html:is([data-theme="pro"],[data-theme="sl"]) .sheet{background:linear-gradient(180deg,#1D202A 0%,#14161D 100%);box-shadow:0 -12px 40px rgba(0,0,0,.5),var(--edge)}
+html:is([data-theme="pro"],[data-theme="sl"]) .scrim{background:rgba(5,6,10,.66);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
 
 /* hero: gradient card with a warm glow + big gradient numeral */
-html[data-theme="pro"] .card:has(.hero){background:linear-gradient(145deg,#232130 0%,#191B25 55%,#14161D 100%)}
-html[data-theme="pro"] .big{font-size:52px;font-weight:800;letter-spacing:-.04em;line-height:.95;background:var(--g-accent);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
-html[data-theme="pro"] .big.neg{background:none;-webkit-text-fill-color:var(--red);color:var(--red)}
-html[data-theme="pro"] .big[style*="--savings"]{background:linear-gradient(135deg,#9CF7CB 0%,#3FD797 55%,#2BB27A 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent!important}
-html[data-theme="pro"] .big[style*="--fg"]{background:linear-gradient(135deg,#FFFFFF 0%,#BFC3D2 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent!important}
-html[data-theme="pro"] .sumtop .big{font-size:44px}
-html[data-theme="pro"] .stat .v{font-size:20px;letter-spacing:-.02em}
-html[data-theme="pro"] .amt{letter-spacing:-.01em}
-html[data-theme="pro"] .goal .bal{font-size:32px;letter-spacing:-.03em}
+html:is([data-theme="pro"],[data-theme="sl"]) .card:has(.hero){background:linear-gradient(145deg,#232130 0%,#191B25 55%,#14161D 100%)}
+html:is([data-theme="pro"],[data-theme="sl"]) .big{font-size:52px;font-weight:800;letter-spacing:-.04em;line-height:.95;background:var(--g-accent);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+html:is([data-theme="pro"],[data-theme="sl"]) .big.neg{background:none;-webkit-text-fill-color:var(--red);color:var(--red)}
+html:is([data-theme="pro"],[data-theme="sl"]) .big[style*="--savings"]{background:linear-gradient(135deg,#9CF7CB 0%,#3FD797 55%,#2BB27A 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent!important}
+html:is([data-theme="pro"],[data-theme="sl"]) .big[style*="--fg"]{background:linear-gradient(135deg,#FFFFFF 0%,#BFC3D2 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent!important}
+html:is([data-theme="pro"],[data-theme="sl"]) .sumtop .big{font-size:44px}
+html:is([data-theme="pro"],[data-theme="sl"]) .stat .v{font-size:20px;letter-spacing:-.02em}
+html:is([data-theme="pro"],[data-theme="sl"]) .amt{letter-spacing:-.01em}
+html:is([data-theme="pro"],[data-theme="sl"]) .goal .bal{font-size:32px;letter-spacing:-.03em}
 
 /* progress: gradient fill with a soft glow, same meaning of color everywhere */
-html[data-theme="pro"] .bar{height:10px;border-radius:5px;background:var(--track);box-shadow:inset 0 1px 2px rgba(0,0,0,.35)}
-html[data-theme="pro"] .bar>i{border-radius:5px;background:var(--gc,var(--accent));background:linear-gradient(90deg,color-mix(in srgb,var(--gc,var(--accent)) 55%,#0A0B12),var(--gc,var(--accent)));box-shadow:0 0 14px color-mix(in srgb,var(--gc,var(--accent)) 40%,transparent)}
-html[data-theme="pro"] .bar>i.warn{background:linear-gradient(90deg,#9A7A22,var(--warn));box-shadow:0 0 14px rgba(245,196,81,.35)}
-html[data-theme="pro"] .bar>i.over{background:linear-gradient(90deg,#B6382E,var(--red));box-shadow:0 0 14px rgba(255,107,94,.38)}
-html[data-theme="pro"] .bar>i.paid{background:linear-gradient(90deg,#1F9E69,var(--ok));box-shadow:0 0 14px rgba(61,220,151,.35)}
-html[data-theme="pro"] .ring{overflow:visible}
-html[data-theme="pro"] .ring .rp{filter:drop-shadow(0 0 5px rgba(244,162,124,.45))}
+html:is([data-theme="pro"],[data-theme="sl"]) .bar{height:10px;border-radius:5px;background:var(--track);box-shadow:inset 0 1px 2px rgba(0,0,0,.35)}
+html:is([data-theme="pro"],[data-theme="sl"]) .bar>i{border-radius:5px;background:var(--gc,var(--accent));background:linear-gradient(90deg,color-mix(in srgb,var(--gc,var(--accent)) 55%,#0A0B12),var(--gc,var(--accent)));box-shadow:0 0 14px color-mix(in srgb,var(--gc,var(--accent)) 40%,transparent)}
+html:is([data-theme="pro"],[data-theme="sl"]) .bar>i.warn{background:linear-gradient(90deg,#9A7A22,var(--warn));box-shadow:0 0 14px rgba(245,196,81,.35)}
+html:is([data-theme="pro"],[data-theme="sl"]) .bar>i.over{background:linear-gradient(90deg,#B6382E,var(--red));box-shadow:0 0 14px rgba(255,107,94,.38)}
+html:is([data-theme="pro"],[data-theme="sl"]) .bar>i.paid{background:linear-gradient(90deg,#1F9E69,var(--ok));box-shadow:0 0 14px rgba(61,220,151,.35)}
+html:is([data-theme="pro"],[data-theme="sl"]) .ring{overflow:visible}
+html:is([data-theme="pro"],[data-theme="sl"]) .ring .rp{filter:drop-shadow(0 0 5px rgba(244,162,124,.45))}
 
 /* actions */
-html[data-theme="pro"] :is(.pillbtn,.notice button,.save){background:var(--g-accent);color:var(--accent-ink);box-shadow:0 6px 16px rgba(234,124,147,.22),inset 0 1px 0 rgba(255,255,255,.4)}
-html[data-theme="pro"] .pillbtn.ghost{background:var(--card2);color:var(--fg);box-shadow:var(--edge)}
-html[data-theme="pro"] .save:disabled{background:var(--card2);color:#6E7285;box-shadow:none}
-html[data-theme="pro"] .fab{background:var(--g-accent);box-shadow:0 12px 30px rgba(234,124,147,.42),inset 0 1px 0 rgba(255,255,255,.45)}
-html[data-theme="pro"] .notice:not(.soft){background:linear-gradient(135deg,rgba(244,178,127,.18),rgba(234,124,147,.08));box-shadow:var(--edge)}
-html[data-theme="pro"] .typetog button[aria-pressed="true"]{background:var(--g-accent)}
-html[data-theme="pro"] .seg button[aria-pressed="true"]{background:var(--g-accent);color:var(--accent-ink)}
-html[data-theme="pro"] .chip[aria-pressed="true"]{background:linear-gradient(135deg,rgba(244,178,127,.22),rgba(234,124,147,.10))}
+html:is([data-theme="pro"],[data-theme="sl"]) :is(.pillbtn,.notice button,.save){background:var(--g-accent);color:var(--accent-ink);box-shadow:0 6px 16px rgba(234,124,147,.22),inset 0 1px 0 rgba(255,255,255,.4)}
+html:is([data-theme="pro"],[data-theme="sl"]) .pillbtn.ghost{background:var(--card2);color:var(--fg);box-shadow:var(--edge)}
+html:is([data-theme="pro"],[data-theme="sl"]) .save:disabled{background:var(--card2);color:#6E7285;box-shadow:none}
+html:is([data-theme="pro"],[data-theme="sl"]) .fab{background:var(--g-accent);box-shadow:0 12px 30px rgba(234,124,147,.42),inset 0 1px 0 rgba(255,255,255,.45)}
+html:is([data-theme="pro"],[data-theme="sl"]) .notice:not(.soft){background:linear-gradient(135deg,rgba(244,178,127,.18),rgba(234,124,147,.08));box-shadow:var(--edge)}
+html:is([data-theme="pro"],[data-theme="sl"]) .typetog button[aria-pressed="true"]{background:var(--g-accent)}
+html:is([data-theme="pro"],[data-theme="sl"]) .seg button[aria-pressed="true"]{background:var(--g-accent);color:var(--accent-ink)}
+html:is([data-theme="pro"],[data-theme="sl"]) .chip[aria-pressed="true"]{background:linear-gradient(135deg,rgba(244,178,127,.22),rgba(234,124,147,.10))}
 
 /* glass nav */
-html[data-theme="pro"] .nav .in{background:var(--g-glass);-webkit-backdrop-filter:blur(22px) saturate(1.5);backdrop-filter:blur(22px) saturate(1.5);box-shadow:0 14px 36px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.08)}
-html[data-theme="pro"] .tab[aria-current="page"]{background:var(--accent-tint)}
+html:is([data-theme="pro"],[data-theme="sl"]) .nav .in{background:var(--g-glass);-webkit-backdrop-filter:blur(22px) saturate(1.5);backdrop-filter:blur(22px) saturate(1.5);box-shadow:0 14px 36px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.08)}
+html:is([data-theme="pro"],[data-theme="sl"]) .tab[aria-current="page"]{background:var(--accent-tint)}
 
 /* toasts (with Undo) */
-html[data-theme="pro"] .toast{border-radius:18px;box-shadow:0 12px 30px rgba(0,0,0,.45)}
-html[data-theme="pro"] .toast button{background:none;border:0;color:#C2573A;font-weight:800;margin-left:14px;padding:4px 2px;min-height:28px}
+html:is([data-theme="pro"],[data-theme="sl"]) .toast{border-radius:18px;box-shadow:0 12px 30px rgba(0,0,0,.45)}
+html:is([data-theme="pro"],[data-theme="sl"]) .toast button{background:none;border:0;color:#C2573A;font-weight:800;margin-left:14px;padding:4px 2px;min-height:28px}
+
+/* ===== S ≠ L THEME =====
+   The violet family from the "Surviving isn't living" app: near-black, violet-to-lilac gradients, flat tab bar with a glowing underline,
+   uppercase eyebrow labels. Builds on the Pro rules above. Switch back any time in Guide > Appearance. */
+html[data-theme="sl"]{
+  --bg:#050506; --card:#141416; --card2:#1C1C20; --track:#222226; --fg:#F5F5F5; --muted:#8E8E95;
+  --accent:#B79BFF; --accent-ink:#FFFFFF; --accent-tint:rgba(106,75,255,.18); --wants:#C08BFF;
+  --g-accent:linear-gradient(135deg,#C08BFF 0%,#8A6BFF 100%);
+  --g-btn:linear-gradient(135deg,#6A4BFF 0%,#C08BFF 100%);
+  --g-card:linear-gradient(160deg,#18181B 0%,#111113 100%);
+  --edge:inset 0 0 0 1px rgba(255,255,255,.08);
+  --lift:0 8px 24px rgba(0,0,0,.35);
+  --rg1:#6A4BFF; --rg2:#C08BFF;
+}
+html[data-theme="sl"],html[data-theme="sl"] body{background-color:#050506}
+html[data-theme="sl"] body{background-image:radial-gradient(560px 380px at 0% -110px,rgba(106,75,255,.26),rgba(5,5,6,0) 70%),radial-gradient(480px 340px at 100% -60px,rgba(255,255,255,.07),rgba(5,5,6,0) 70%)}
+html[data-theme="sl"] .card:has(.hero){background:radial-gradient(130% 150% at 0% 0%,rgba(106,75,255,.30) 0%,rgba(106,75,255,.08) 45%,rgba(20,20,22,0) 75%),linear-gradient(160deg,#18181B,#0F0F11)}
+html[data-theme="sl"] .sheet{background:linear-gradient(180deg,#1A1A1E 0%,#111113 100%)}
+html[data-theme="sl"] :is(.pillbtn,.notice button,.save,.typetog button[aria-pressed="true"],.seg button[aria-pressed="true"]){background:var(--g-btn);color:#fff;box-shadow:0 4px 14px rgba(106,75,255,.3)}
+html[data-theme="sl"] .fab{background:var(--g-btn);color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.5),0 6px 20px rgba(106,75,255,.4)}
+html[data-theme="sl"] .chip[aria-pressed="true"]{background:var(--accent-tint)}
+html[data-theme="sl"] .notice:not(.soft){background:linear-gradient(135deg,rgba(106,75,255,.20) 0%,rgba(255,255,255,.03) 80%);border:1px solid rgba(106,75,255,.3);color:var(--accent);box-shadow:none}
+html[data-theme="sl"] .ring .rp{filter:drop-shadow(0 0 5px rgba(192,139,255,.5))}
+html[data-theme="sl"] :is(.stat .l,.lab,.sechead>span){text-transform:uppercase;letter-spacing:.08em;font-size:11px;font-weight:800}
+/* flat tab bar with a glowing underline */
+html[data-theme="sl"] .nav{padding-top:26px;background:linear-gradient(180deg,rgba(5,5,6,0) 0%,rgba(5,5,6,.92) 38%,var(--bg) 100%)}
+html[data-theme="sl"] .nav .in{background:none;box-shadow:none;border-radius:0;-webkit-backdrop-filter:none;backdrop-filter:none;height:54px}
+html[data-theme="sl"] .tab{position:relative;min-height:50px;font-size:10.5px}
+html[data-theme="sl"] .tab[aria-current="page"]{background:none;color:var(--fg)}
+html[data-theme="sl"] .tab[aria-current="page"] svg{color:#C08BFF}
+html[data-theme="sl"] .tab[aria-current="page"]::after{content:"";position:absolute;bottom:0;left:50%;width:20px;height:2.5px;margin-left:-10px;border-radius:2px;background:#C08BFF;box-shadow:0 0 8px rgba(192,139,255,.8)}
 
 /* ===== Status dropdown (Today) ===== */
 .dd{margin-top:2px}
@@ -400,6 +431,15 @@ window.LocalDB = (function(){
     async importAll(docs){
       await tx("readwrite", (st) => { st.clear(); for (const [k, v] of Object.entries(docs)) st.put(clone(v), k); });
     },
+    async snapList(){ return (await getRaw("meta/snaps")) || []; },
+    async snapshot(label){
+      const docs = await api.exportAll(); if (!Object.keys(docs).length) return false;
+      const list = (await getRaw("meta/snaps")) || [], body = JSON.stringify(docs);
+      if (list[0] && list[0].body === body) return false;
+      list.unshift({at: new Date().toISOString(), label, body});
+      await tx("readwrite", (st) => st.put(list.slice(0, 3), "meta/snaps"));
+      return true;
+    },
     async isEmpty(){ return !(await allEntries()).some(([k]) => !k.startsWith("meta/")); },
     async getMeta(k){ return getRaw("meta/" + k); },
     async setMeta(k, v){ await tx("readwrite", (st) => st.put(v, "meta/" + k)); },
@@ -415,10 +455,12 @@ window.LocalDB = (function(){
   const FREQ = {monthly:["Monthly",1], semimonthly:["Twice a month",2], biweekly:["Every 2 weeks",26/12], weekly:["Weekly",52/12]};
   const STARTER = [["Rent / Housing","Needs"],["Utilities","Needs"],["Groceries","Needs"],["Phone","Needs"],["Gas / Transportation","Needs"],["Car Insurance","Needs"],["Eating Out","Wants"],["Gaming / Entertainment","Wants"],["Subscriptions","Wants"],["Fitness / Supplements","Wants"],["Shopping / Clothes","Wants"],["Personal Care","Wants"],["Gifts / Misc","Wants"]];
 
+  const curTheme = () => document.documentElement.getAttribute("data-theme");
   const isPro = () => document.documentElement.getAttribute("data-theme") !== "classic";
   function setTheme(t){
-    document.documentElement.setAttribute("data-theme", t === "classic" ? "classic" : "pro");
-    try { localStorage.setItem("mb-theme", t === "classic" ? "classic" : "pro"); } catch (e){}
+    t = t === "classic" || t === "pro" ? t : "sl";
+    document.documentElement.setAttribute("data-theme", t);
+    try { localStorage.setItem("mb-theme", t); } catch (e){}
     render();
   }
   const uid = () => Math.random().toString(36).slice(2, 10);
@@ -537,7 +579,7 @@ window.LocalDB = (function(){
     const color = p > 1 ? "var(--red)" : p >= 0.9 ? "var(--warn)" : "var(--accent)";
     const accentRing = !(p > 1) && !(p >= 0.9), pro = isPro() && accentRing;
     return `<svg class="ring" role="img" aria-label="${Math.round(p * 100)}% of monthly spending used" width="84" height="84" viewBox="0 0 84 84">
-      <defs><linearGradient id="ringG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:#FFCB9B"/><stop offset="1" style="stop-color:#EA7C93"/></linearGradient></defs>
+      <defs><linearGradient id="ringG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--rg1,#FFCB9B)"/><stop offset="1" style="stop-color:var(--rg2,#EA7C93)"/></linearGradient></defs>
       <circle cx="42" cy="42" r="34" fill="none" stroke="var(--track)" stroke-width="9"/>
       <circle${pro ? ' class="rp"' : ""} cx="42" cy="42" r="34" fill="none" stroke="${pro ? "url(#ringG)" : color}" stroke-width="9" stroke-linecap="round" stroke-dasharray="${(C * used).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 42 42)"${used === 0 ? ' opacity="0"' : ""}/>
       <text x="42" y="41" text-anchor="middle" font-family="Figtree,sans-serif" font-size="16" font-weight="700" fill="var(--fg)">${Math.round(p * 100)}%</text>
@@ -1251,8 +1293,8 @@ window.LocalDB = (function(){
       <div class="headrow"><div class="head"><span class="date">Guide</span><h1>How to use Mission Budget</h1></div><button type="button" class="iconbtn" data-go="today" aria-label="Back to Today">${IC.x}</button></div>
       <details class="gd" open><summary>Appearance</summary><div class="gbody">
         <p>Pick the look. This only changes colors and styling. Your data, plan and backups are not affected, and you can switch back any time.</p>
-        <div class="seg" role="group" aria-label="Theme"><button type="button" data-theme-set="classic" aria-pressed="${!isPro()}">Classic</button><button type="button" data-theme-set="pro" aria-pressed="${isPro()}">Pro</button></div>
-        <p class="hint">Classic is the original Soft Night look. Pro adds gradients, glow, and a glass nav bar. This choice is saved on this device.</p>
+        <div class="seg" role="group" aria-label="Theme"><button type="button" data-theme-set="sl" aria-pressed="${curTheme() === "sl"}">S ≠ L</button><button type="button" data-theme-set="pro" aria-pressed="${curTheme() === "pro"}">Pro</button><button type="button" data-theme-set="classic" aria-pressed="${curTheme() === "classic"}">Classic</button></div>
+        <p class="hint">S ≠ L matches your Surviving isn't living app: violet gradients and a flat tab bar. Pro is the peach glass look. Classic is the original. This choice is saved on this device.</p>
       </div></details>
       <details class="gd" open><summary>Start from today<span class="progressline" style="margin-left:auto">${n} of ${START_STEPS.length}</span></summary>
         <div class="gbody">${START_STEPS.map(([k, t, d], i) => `<button type="button" class="step" data-step="${k}" aria-pressed="${!!done[k]}"><span class="check">${IC.check}</span><span><div class="st">${i + 1}. ${t}</div><div class="sd">${d}</div></span></button>`).join("")}</div>
@@ -1263,6 +1305,7 @@ window.LocalDB = (function(){
         <p>To move to a new phone, or after reinstalling, tap Restore and pick your newest backup file.</p>
         <p class="hint">Last backup: ${S.lastBackup ? esc(new Date(S.lastBackup).toLocaleString("en-US", {month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit"})) : "never"}</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="pillbtn" data-backup>Back up now</button><button type="button" class="pillbtn ghost" data-restore>Restore from file</button></div>
+        ${(S.snaps || []).length ? `<p class="hint" style="margin:10px 0 4px"><b>Automatic safety copies.</b> The app keeps its own copy of your data when an update arrives or before a restore. These are inside the app, so still save a file backup too.</p>${S.snaps.map((x, i) => `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0"><span class="hint" style="margin:0">${esc(new Date(x.at).toLocaleString("en-US", {month: "short", day: "numeric", hour: "numeric", minute: "2-digit"}))} · ${esc(x.label)}</span><button type="button" class="pillbtn ghost" data-snap="${i}">Restore</button></div>`).join("")}` : ""}
       </div></details>
       <details class="gd"><summary>How to log</summary><div class="gbody">${RULES.map(([c, t]) => `<div class="rule"><span class="dot" style="--gc:${c}"></span><p>${t}</p></div>`).join("")}</div></details>
       <details class="gd"><summary>Paycheck budgeting</summary><div class="gbody">
@@ -1677,6 +1720,7 @@ window.LocalDB = (function(){
       const when = data.exportedAt ? new Date(data.exportedAt).toLocaleString("en-US", {month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit"}) : "unknown date";
       if (!S.empty && !confirm("Replace everything in the app with the backup from " + when + "? This can't be undone.")) return;
       try {
+        try { await S.db.snapshot("Before a restore"); } catch (e){}
         await S.db.importAll(data.docs);
         await S.db.setMeta("lastBackup", new Date().toISOString());
         location.reload();
@@ -1765,6 +1809,12 @@ window.LocalDB = (function(){
     if ((el = t("[data-theme-set]"))){ setTheme(el.dataset.themeSet); return; }
     if ((el = t("[data-backup]"))){ exportBackup(); return; }
     if ((el = t("[data-restore]"))){ pickRestore(); return; }
+    if ((el = t("[data-snap]"))){
+      const x = (S.snaps || [])[Number(el.dataset.snap)]; if (!x) return;
+      if (!confirm("Replace everything in the app with this safety copy from " + new Date(x.at).toLocaleString("en-US", {month: "short", day: "numeric", hour: "numeric", minute: "2-digit"}) + "?")) return;
+      (async () => { try { await S.db.snapshot("Before using a safety copy"); await S.db.importAll(JSON.parse(x.body)); location.reload(); } catch (e){ toast("Restore failed: " + ((e && e.name) || "unknown")); } })();
+      return;
+    }
     if ((el = t("[data-go]"))){ S.tab = el.dataset.go; render(); window.scrollTo(0, 0); return; }
     if ((el = t("[data-log]"))){ openLog(el.dataset.log); return; }
     if ((el = t("[data-step]"))){ toggleStep(el.dataset.step); return; }
@@ -1819,7 +1869,13 @@ window.LocalDB = (function(){
   (async () => {
     let db = null;
     try { db = await window.LocalDB.open(); } catch (e){ db = null; }
-    if (db){ try { S.lastBackup = await db.getMeta("lastBackup") || null; S.empty = await db.isEmpty(); } catch (e){} try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e){} }
+    if (db){ try { S.lastBackup = await db.getMeta("lastBackup") || null; S.empty = await db.isEmpty(); } catch (e){}
+      try { // a safety copy of your data every time a new version of the app arrives
+        const b = (document.querySelector('meta[name="mb-build"]') || {}).content || "";
+        if (!S.empty && b && (await db.getMeta("build")) !== b){ await db.snapshot("When an update arrived"); }
+        if (b) await db.setMeta("build", b);
+        S.snaps = await db.snapList();
+      } catch (e){} try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e){} }
     if (!db){ S.status = "offline"; S.plan = starterPlan(); S.goalsLoaded = true; S.months[monthKey(new Date())] = []; render(); return; }
     S.db = db;
     const _doc = db.doc.bind(db);

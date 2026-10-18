@@ -13,8 +13,17 @@ Personal budgeting PWA. All data is stored on the device (IndexedDB). This repo 
 ## Updating the app
 Updates are pushed here by Claude. The app checks GitHub every time you open it or return to it, and reloads into the newest build by itself (it waits if a sheet is open). Your data is never touched.
 
-Last updated: Oct 18, 2026 · 4:04 PM ET.
+Last updated: Oct 18, 2026 · 4:11 PM ET.
 
 If an update doesn't show: give GitHub about a minute, then fully close and reopen the app once.
 
 If you change the icons or the manifest, bump `VERSION` in `sw.js`. Run `./stamp.sh` before every push.
+
+## Looks (Guide > Appearance)
+- **S ≠ L** (default): violet look matching the Surviving isn't living app. Flat tab bar, uppercase labels.
+- **Pro**: peach gradients and a glass nav bar.
+- **Classic**: the original Soft Night look.
+All three live in `index.html`; the choice is saved on the device and never touches your data.
+
+## Your data and updates
+Data lives in the phone's IndexedDB and is never part of an update. When a new version arrives, the app also saves its own safety copy (last 3 kept, Guide > Backup & your data). Still save a file backup weekly.
