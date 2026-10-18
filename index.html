@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Rosewood</title>
 <script>try{var _t=localStorage.getItem("mb-theme");document.documentElement.setAttribute("data-theme",_t==="classic"||_t==="pro"?_t:"sl")}catch(e){document.documentElement.setAttribute("data-theme","sl")}</script>
-<meta name="mb-build" content="1792363684">
+<meta name="mb-build" content="1792364100">
 <script>
 /* Auto-update: on open and on return to the app, check GitHub for a newer build and reload into it.
    Skips while a sheet is open so it never interrupts you mid-entry. */
-(function(){var B="1792363684";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
+(function(){var B="1792364100";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
 function chk(){fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){var m=t.match(/name="mb-build" content="(\d+)"/);if(!m||m[1]===B||Number(m[1])<Number(B))return;if(busy())return;try{if(sessionStorage.getItem("mb_rl")===m[1])return;sessionStorage.setItem("mb_rl",m[1])}catch(e){}location.replace(location.pathname+"?v="+m[1])}).catch(function(){})}
 window.addEventListener("load",function(){setTimeout(chk,1500)});document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();
 </script>
@@ -577,11 +577,13 @@ window.LocalDB = (function(){
   function ringSVG(p){
     const C = 2 * Math.PI * 34, used = Math.max(0, Math.min(1, p));
     const color = p >= 0.9 ? "var(--red)" : p >= 0.7 ? "var(--warn)" : "var(--accent)";
-    const accentRing = p < 0.7, pro = isPro() && accentRing;
+    const pro = isPro();
+    const g1 = p >= 0.9 ? "#D4493D" : p >= 0.7 ? "#C9A23A" : "var(--rg1,#FFCB9B)", g2 = p >= 0.9 ? "var(--red)" : p >= 0.7 ? "var(--warn)" : "var(--rg2,#EA7C93)";
+    const glow = p >= 0.9 ? "rgba(255,107,94,.45)" : p >= 0.7 ? "rgba(245,196,81,.45)" : "";
     return `<svg class="ring" role="img" aria-label="${Math.round(p * 100)}% of monthly spending used" width="84" height="84" viewBox="0 0 84 84">
-      <defs><linearGradient id="ringG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--rg1,#FFCB9B)"/><stop offset="1" style="stop-color:var(--rg2,#EA7C93)"/></linearGradient></defs>
+      <defs><linearGradient id="ringG${Math.round(p*100)}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:${g1}"/><stop offset="1" style="stop-color:${g2}"/></linearGradient></defs>
       <circle cx="42" cy="42" r="34" fill="none" stroke="var(--track)" stroke-width="9"/>
-      <circle${pro ? ' class="rp"' : ""} cx="42" cy="42" r="34" fill="none" stroke="${pro ? "url(#ringG)" : color}" stroke-width="9" stroke-linecap="round" stroke-dasharray="${(C * used).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 42 42)"${used === 0 ? ' opacity="0"' : ""}/>
+      <circle${pro ? ' class="rp"' : ""}${pro && glow ? ` style="filter:drop-shadow(0 0 5px ${glow})"` : ""} cx="42" cy="42" r="34" fill="none" stroke="${pro ? `url(#ringG${Math.round(p*100)})` : color}" stroke-width="9" stroke-linecap="round" stroke-dasharray="${(C * used).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 42 42)"${used === 0 ? ' opacity="0"' : ""}/>
       <text x="42" y="41" text-anchor="middle" font-family="Figtree,sans-serif" font-size="16" font-weight="700" fill="var(--fg)">${Math.round(p * 100)}%</text>
       <text x="42" y="56" text-anchor="middle" font-family="Figtree,sans-serif" font-size="10" fill="var(--muted)">used</text></svg>`;
   }
