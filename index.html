@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Rosewood</title>
 <script>try{var _t=localStorage.getItem("mb-theme");document.documentElement.setAttribute("data-theme",_t==="classic"||_t==="pro"?_t:"sl")}catch(e){document.documentElement.setAttribute("data-theme","sl")}</script>
-<meta name="mb-build" content="1792521768">
+<meta name="mb-build" content="1792521942">
 <script>
 /* Auto-update: on open and on return to the app, check GitHub for a newer build and reload into it.
    Skips while a sheet is open so it never interrupts you mid-entry. */
-(function(){var B="1792521768";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
+(function(){var B="1792521942";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
 function chk(){fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){var m=t.match(/name="mb-build" content="(\d+)"/);if(!m||m[1]===B||Number(m[1])<Number(B))return;if(busy())return;try{if(sessionStorage.getItem("mb_rl")===m[1])return;sessionStorage.setItem("mb_rl",m[1])}catch(e){}location.replace(location.pathname+"?v="+m[1])}).catch(function(){})}
 window.addEventListener("load",function(){setTimeout(chk,1500)});document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();
 </script>
@@ -652,6 +652,24 @@ window.LocalDB = (function(){
     for (const g of S.goals) for (const e of (g.entries || [])) if (after(e) && !e.starting){ chk -= num(e.amount); if (sav != null) sav += num(e.amount); n++; }
     return {checking: round2(chk), savings: sav == null ? null : round2(sav), n, asOf: acc.asOf};
   }
+  // Checking/savings before and after each logged entry, worked backward from today's estimate so it always matches the Today screen.
+  function accountTrail(){
+    const lb = liveBalances(); if (!lb) return {};
+    const since = S.accounts.asOf || "", sinceDay = since ? ymd(new Date(since)) : "";
+    const ev = [];
+    const stamp = (x) => x.ts || ((x.date || "") + "T12:00:00.000Z");
+    for (const k in S.months) for (const t of S.months[k]) ev.push({id: t.id, at: stamp(t), counted: (t.ts || "") > since && (t.date || "") >= sinceDay, back: (t.ts || "") > since && (t.date || "") < sinceDay, chk: t.type === "income" ? num(t.amount) : -num(t.amount), sav: 0});
+    for (const g of S.goals) for (const e of (g.entries || [])){ if (e.starting) continue; ev.push({id: e.id, at: stamp(e), counted: (e.ts || "") > since && (e.date || "") >= sinceDay, back: (e.ts || "") > since && (e.date || "") < sinceDay, chk: -num(e.amount), sav: num(e.amount)}); }
+    ev.sort((x, y) => y.at.localeCompare(x.at));
+    const out = {}; let c = lb.checking, v = lb.savings;
+    for (const x of ev){
+      if (x.back) continue; // back-filled after the update: not part of the estimate
+      const cb = round2(c - x.chk), vb = v == null ? null : round2(v - x.sav);
+      out[x.id] = {chk: [cb, c], sav: x.sav !== 0 && v != null ? [vb, v] : null};
+      c = cb; if (v != null) v = vb;
+    }
+    return out;
+  }
   function forecast(){
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const k = monthKey(today), m = monthStats(k), lb = liveBalances();
@@ -1162,6 +1180,8 @@ window.LocalDB = (function(){
     ensureMonth(k);
     const loaded = k in S.months;
     const m = monthStats(k);
+    const trail = accountTrail();
+    const trl = (id, sav) => { const x = trail[id]; if (!x) return ""; return `<div class="t2">Checking ${money(x.chk[0])} → ${money(x.chk[1])}</div>` + (x.sav ? `<div class="t2">Savings ${money(x.sav[0])} → ${money(x.sav[1])}</div>` : ""); };
     const rows = m.tx.map((t) => ({...t, kind: t.type}));
     for (const g of S.goals){
       // running balance: what the goal held just before and just after each entry
@@ -1199,7 +1219,7 @@ window.LocalDB = (function(){
         if (t.kind === "goal"){
           const a = num(t.amount);
           html += `<button type="button" class="txrow" data-edit-entry="${esc(t.id)}" data-goal="${esc(t.goal.id)}" aria-label="Edit ${esc(t.goal.name)} entry"><span class="dot" style="--gc:var(--savings)"></span>
-            <span style="min-width:0"><div class="t1">${esc(t.goal.name)}</div><div class="t2">${a < 0 ? "Used" : "Added"}${t.note ? " · " + esc(t.note) : ""}${t.edited ? " · edited" : ""}</div>${t.bal ? `<div class="t2">Balance ${money(t.bal[0])} → ${money(t.bal[1])}</div>` : ""}</span>
+            <span style="min-width:0"><div class="t1">${esc(t.goal.name)}</div><div class="t2">${a < 0 ? "Used" : "Added"}${t.note ? " · " + esc(t.note) : ""}${t.edited ? " · edited" : ""}</div>${t.bal ? `<div class="t2">Goal ${money(t.bal[0])} → ${money(t.bal[1])}</div>` : ""}${trl(t.id)}</span>
             <span class="amt sav">${a < 0 ? "−" : "+"}${money(Math.abs(a))}</span><span class="chev" aria-hidden="true">${IC.r}</span></button>`;
           continue;
         }
@@ -1209,7 +1229,7 @@ window.LocalDB = (function(){
         const second = (inc ? ("Income" + (t.note ? " · " + t.note : "")) : ([tagTxt, t.note].filter(Boolean).join(" · ") || (c ? c.group : ""))) + ((t.edits || []).length ? " · edited" : "");
         html += `<button type="button" class="txrow" data-edit-tx="${esc(t.id)}" data-month="${esc(k)}" aria-label="Edit ${esc(title)} ${money(Math.abs(num(t.amount)))}">
           <span class="dot" style="--gc:${inc ? "var(--ok)" : c ? GC[c.group] || "var(--muted)" : "var(--muted)"}"></span>
-          <span style="min-width:0"><div class="t1">${esc(title)}</div><div class="t2">${esc(second)}</div></span>
+          <span style="min-width:0"><div class="t1">${esc(title)}</div><div class="t2">${esc(second)}</div>${trl(t.id)}</span>
           <span class="amt ${inc ? "inc" : ""}">${inc ? "+" : "−"}${money(Math.abs(num(t.amount)))}</span>
           <span class="chev" aria-hidden="true">${IC.r}</span>
         </button>`;
