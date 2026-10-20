@@ -13,7 +13,7 @@ Personal budgeting PWA. All data is stored on the device (IndexedDB). This repo 
 ## Updating the app
 Updates are pushed here by Claude. The app checks GitHub every time you open it or return to it, and reloads into the newest build by itself (it waits if a sheet is open). Your data is never touched.
 
-Last updated: Oct 20, 2026 · 1:22 AM ET.
+Last updated: Oct 20, 2026 · 2:42 PM ET.
 
 If an update doesn't show: give GitHub about a minute, then fully close and reopen the app once.
 

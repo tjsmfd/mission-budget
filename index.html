@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Rosewood</title>
 <script>try{var _t=localStorage.getItem("mb-theme");document.documentElement.setAttribute("data-theme",_t==="classic"||_t==="pro"?_t:"sl")}catch(e){document.documentElement.setAttribute("data-theme","sl")}</script>
-<meta name="mb-build" content="1792473731">
+<meta name="mb-build" content="1792521768">
 <script>
 /* Auto-update: on open and on return to the app, check GitHub for a newer build and reload into it.
    Skips while a sheet is open so it never interrupts you mid-entry. */
-(function(){var B="1792473731";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
+(function(){var B="1792521768";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
 function chk(){fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){var m=t.match(/name="mb-build" content="(\d+)"/);if(!m||m[1]===B||Number(m[1])<Number(B))return;if(busy())return;try{if(sessionStorage.getItem("mb_rl")===m[1])return;sessionStorage.setItem("mb_rl",m[1])}catch(e){}location.replace(location.pathname+"?v="+m[1])}).catch(function(){})}
 window.addEventListener("load",function(){setTimeout(chk,1500)});document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();
 </script>
@@ -1163,7 +1163,14 @@ window.LocalDB = (function(){
     const loaded = k in S.months;
     const m = monthStats(k);
     const rows = m.tx.map((t) => ({...t, kind: t.type}));
-    for (const g of S.goals) for (const e of (g.entries || [])) if (e.date.startsWith(k)) rows.push({id: e.id, date: e.date, ts: e.ts, amount: e.amount, kind: "goal", goal: g, note: e.note, edited: (e.edits || []).length > 0});
+    for (const g of S.goals){
+      // running balance: what the goal held just before and just after each entry
+      let run = 0;
+      const ord = (g.entries || []).map((e, i) => ({e, i})).sort((a, b) => (a.e.date + (a.e.ts || "")).localeCompare(b.e.date + (b.e.ts || "")) || a.i - b.i);
+      const bal = {};
+      for (const {e} of ord){ const before = run; run = round2(run + num(e.amount)); bal[e.id] = [before, run]; }
+      for (const e of (g.entries || [])) if (e.date.startsWith(k)) rows.push({id: e.id, date: e.date, ts: e.ts, amount: e.amount, kind: "goal", goal: g, note: e.note, edited: (e.edits || []).length > 0, bal: bal[e.id]});
+    }
     rows.sort((a, b) => (b.date + (b.ts || "")).localeCompare(a.date + (a.ts || "")));
     let html = `
       <div class="headrow"><div class="head"><span class="date">History</span></div>${helpBtn()}</div>
@@ -1192,7 +1199,7 @@ window.LocalDB = (function(){
         if (t.kind === "goal"){
           const a = num(t.amount);
           html += `<button type="button" class="txrow" data-edit-entry="${esc(t.id)}" data-goal="${esc(t.goal.id)}" aria-label="Edit ${esc(t.goal.name)} entry"><span class="dot" style="--gc:var(--savings)"></span>
-            <span style="min-width:0"><div class="t1">${esc(t.goal.name)}</div><div class="t2">${a < 0 ? "Used" : "Added"}${t.note ? " · " + esc(t.note) : ""}${t.edited ? " · edited" : ""}</div></span>
+            <span style="min-width:0"><div class="t1">${esc(t.goal.name)}</div><div class="t2">${a < 0 ? "Used" : "Added"}${t.note ? " · " + esc(t.note) : ""}${t.edited ? " · edited" : ""}</div>${t.bal ? `<div class="t2">Balance ${money(t.bal[0])} → ${money(t.bal[1])}</div>` : ""}</span>
             <span class="amt sav">${a < 0 ? "−" : "+"}${money(Math.abs(a))}</span><span class="chev" aria-hidden="true">${IC.r}</span></button>`;
           continue;
         }
