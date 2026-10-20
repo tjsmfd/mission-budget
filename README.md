@@ -13,7 +13,7 @@ Personal budgeting PWA. All data is stored on the device (IndexedDB). This repo 
 ## Updating the app
 Updates are pushed here by Claude. The app checks GitHub every time you open it or return to it, and reloads into the newest build by itself (it waits if a sheet is open). Your data is never touched.
 
-Last updated: Oct 18, 2026 · 6:55 PM ET.
+Last updated: Oct 20, 2026 · 1:22 AM ET.
 
 If an update doesn't show: give GitHub about a minute, then fully close and reopen the app once.
 
@@ -27,3 +27,6 @@ All three live in `index.html`; the choice is saved on the device and never touc
 
 ## Your data and updates
 Data lives in the phone's IndexedDB and is never part of an update. When a new version arrives, the app also saves its own safety copy (last 3 kept, Guide > Backup & your data). Still save a file backup weekly.
+
+## Month review
+History > Month review (also offered on Today in the last days of a month and the first days of the next). Computed from the logged month, so nothing extra is stored: categories and pocket money over budget, goals short of their monthly amount, DoorDash stats (entries whose note says DoorDash), and plain notes to act on when editing the plan.

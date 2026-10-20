@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Rosewood</title>
 <script>try{var _t=localStorage.getItem("mb-theme");document.documentElement.setAttribute("data-theme",_t==="classic"||_t==="pro"?_t:"sl")}catch(e){document.documentElement.setAttribute("data-theme","sl")}</script>
-<meta name="mb-build" content="1792364100">
+<meta name="mb-build" content="1792473731">
 <script>
 /* Auto-update: on open and on return to the app, check GitHub for a newer build and reload into it.
    Skips while a sheet is open so it never interrupts you mid-entry. */
-(function(){var B="1792364100";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
+(function(){var B="1792473731";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
 function chk(){fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){var m=t.match(/name="mb-build" content="(\d+)"/);if(!m||m[1]===B||Number(m[1])<Number(B))return;if(busy())return;try{if(sessionStorage.getItem("mb_rl")===m[1])return;sessionStorage.setItem("mb_rl",m[1])}catch(e){}location.replace(location.pathname+"?v="+m[1])}).catch(function(){})}
 window.addEventListener("load",function(){setTimeout(chk,1500)});document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();
 </script>
@@ -548,7 +548,7 @@ window.LocalDB = (function(){
   // ---------------- render ----------------
   function render(){
     document.querySelectorAll(".tab").forEach((b) => { if (b.dataset.tab === S.tab) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
-    ({today: renderToday, goals: renderGoals, history: renderHistory, plan: renderPlan, guide: renderGuide, forecast: renderForecast})[S.tab]();
+    ({today: renderToday, goals: renderGoals, history: renderHistory, plan: renderPlan, guide: renderGuide, forecast: renderForecast, review: renderReview})[S.tab]();
   }
   const helpBtn = () => `<button type="button" class="iconbtn" data-go="guide" aria-label="Open the guide">${IC.help}</button>`;
 
@@ -559,6 +559,11 @@ window.LocalDB = (function(){
     else {
       const days = S.lastBackup ? Math.floor((Date.now() - new Date(S.lastBackup).getTime()) / 864e5) : null;
       if (days === null || days >= 7) out += `<div class="notice"><span>${days === null ? "You haven't backed up yet." : "Last backup was " + days + " days ago."} Your data only lives on this phone.</span><button type="button" data-backup>Back up</button></div>`;
+    }
+    if (S.status === "live" && S.plan && !S.plan.example){
+      const now = new Date(), dim = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      const rk = now.getDate() >= dim - 2 ? monthKey(now) : now.getDate() <= 5 ? shiftMonth(monthKey(now), -1) : "";
+      if (rk) out += `<div class="notice soft"><span>${now.getDate() >= dim - 2 ? "The month is almost over." : "Last month is done."} Your ${esc(monthName(rk).split(" ")[0])} review is ready.</span><button type="button" data-review="${esc(rk)}">Review</button></div>`;
     }
     const doneCount = Object.values(S.guide.done || {}).filter(Boolean).length;
     if (S.plan && S.plan.example) out += '<div class="notice"><span>Your plan still has example numbers. The guide walks you through setting it up.</span><button type="button" data-go="guide">Start here</button></div>';
@@ -1054,6 +1059,103 @@ window.LocalDB = (function(){
     document.getElementById("newGoal").onclick = () => openGoalEdit(null);
   }
 
+  // ---------------- month review ----------------
+  const DD_RE = /door\s*dash/i;
+  function ddStats(k){
+    const tx = (S.months[k] || []).filter((t) => t.type === "income" && DD_RE.test(t.note || ""));
+    const byDay = {};
+    let total = 0, toPocket = 0, biggest = 0;
+    for (const t of tx){ const a = num(t.amount); total += a; toPocket += num(t.pocket); biggest = Math.max(biggest, a); byDay[t.date] = (byDay[t.date] || 0) + a; }
+    const days = Object.keys(byDay).sort();
+    let best = null; for (const d of days) if (!best || byDay[d] > best.amount) best = {date: d, amount: byDay[d]};
+    const wk = {}; for (const d of days){ const [y, m, dd] = d.split("-").map(Number); const n = new Date(y, m - 1, dd).toLocaleString("en-US", {weekday: "long"}); wk[n] = (wk[n] || 0) + 1; }
+    const topDay = Object.keys(wk).sort((a, b) => wk[b] - wk[a])[0] || "";
+    const [y, m] = k.split("-").map(Number), dim = new Date(y, m, 0).getDate();
+    return {n: tx.length, total: round2(total), toPocket: round2(toPocket), biggest, days: days.length, best, topDay, topDayN: wk[topDay] || 0, avgEntry: tx.length ? total / tx.length : 0, avgDay: days.length ? total / days.length : 0, perWeek: days.length / (dim / 7), dim};
+  }
+  const roundUp5 = (n) => Math.ceil(n / 5 - 1e-9) * 5;
+  function renderReview(){
+    const k = S.revMonth || monthKey(new Date());
+    ensureMonth(k); ensureMonth(shiftMonth(k, -1));
+    const loaded = k in S.months;
+    const m = monthStats(k), isNow = k === monthKey(new Date());
+    const dd = ddStats(k), prev = (shiftMonth(k, -1) in S.months) ? ddStats(shiftMonth(k, -1)) : null;
+    // categories over budget (pocket money is shown on its own)
+    const over = [], within = [];
+    for (const c of cats()){
+      if (roleOf(c) === "fun") continue;
+      const b = num(c.budget), sp = m.spent[c.id] || 0, d = round2(sp - b);
+      (d >= 1 ? over : within).push({c, b, sp, d});
+    }
+    over.sort((a, b) => b.d - a.d);
+    const pocketNet = round2(m.funBudget - m.funSpent - m.funCover);
+    const pocketOver = pocketNet < 0 ? -pocketNet : 0;
+    const funCats = cats().filter((c) => roleOf(c) === "fun");
+    const goalRows = S.goals.filter((g) => num(g.monthly) > 0).map((g) => ({g, plan: num(g.monthly), got: goalAddedIn(g, k)}));
+    const goalShort = goalRows.filter((r) => r.plan - r.got >= 1);
+    const row = (l, r, color) => `<span class="orow" style="display:flex;justify-content:space-between;gap:10px"><span>${l}</span><span style="${color ? "color:" + color + ";" : ""}font-weight:700">${r}</span></span>`;
+    // take-aways: plain statements you can act on when you edit the plan
+    const tips = [];
+    if (pocketOver > 0) tips.push(`Pocket money ran ${money(pocketOver)} over. Either raise it to about ${money(roundUp5(m.funBudget + pocketOver), 0)} in Plan or plan for fewer purchases.`);
+    else if (m.funBudget > 0 && pocketNet >= 1) tips.push(isNow ? `Pocket money has ${money(pocketNet)} left so far.` : `Pocket money finished with ${money(pocketNet)} left. That can stay as is or move toward a goal.`);
+    for (const o of over.slice(0, 4)) tips.push(`${o.c.name} was ${money(o.d)} over (${money(o.sp)} spent on ${money(o.b, 0)}). A budget of about ${money(roundUp5(o.sp), 0)} would have fit.`);
+    for (const r of goalShort.slice(0, 3)) tips.push(`${r.g.name || "A goal"} got ${money(r.got)} of the ${money(r.plan, 0)} planned (${money(r.plan - r.got)} short).`);
+    if (dd.n) tips.push(`DoorDash brought in ${money(dd.total)} over ${dd.days} ${dd.days === 1 ? "day" : "days"}${prev && prev.n ? ` (${dd.total >= prev.total ? "up" : "down"} ${money(Math.abs(dd.total - prev.total))} from last month)` : ""}.`);
+    const ovTotal = over.reduce((a, o) => a + o.d, 0);
+    let html = `
+      <div class="headrow"><div class="head"><span class="date">${isNow ? "So far this month" : "Month review"}</span></div><button type="button" class="iconbtn" data-go="history" aria-label="Back to History">${IC.x}</button></div>
+      <div class="monthnav">
+        <button type="button" class="iconbtn" id="rPrev" aria-label="Previous month">${IC.l}</button>
+        <h1 style="font-size:22px">${esc(monthName(k))}</h1>
+        <button type="button" class="iconbtn" id="rNext" aria-label="Next month">${IC.r}</button>
+      </div>`;
+    if (!loaded){ app.innerHTML = html + '<p class="empty">Loading…</p>'; wireReview(k); return; }
+    if (!m.tx.length && !goalRows.length){ app.innerHTML = html + '<p class="empty">Nothing logged in this month, so there is nothing to review yet.</p>'; wireReview(k); return; }
+    html += `<div class="stats">
+        <div class="stat"><span class="l">Over budget</span><span class="v" style="${ovTotal + pocketOver > 0 ? "color:var(--red)" : ""}">${money(ovTotal + pocketOver, 0)}</span></div>
+        <div class="stat"><span class="l">Pocket money</span><span class="v" style="${pocketNet < 0 ? "color:var(--red)" : ""}">${pocketNet < 0 ? "−" : ""}${money(Math.abs(pocketNet), 0)}</span></div>
+        <div class="stat"><span class="l">DoorDash</span><span class="v">${money(dd.total, 0)}</span></div>
+      </div>`;
+    if (tips.length) html += `<section class="card" aria-label="Notes for next month" style="display:flex;flex-direction:column;gap:8px"><h2>Notes for next month</h2>${tips.map((t) => `<p style="margin:0;font-size:14px;line-height:1.45">• ${esc(t)}</p>`).join("")}</section>`;
+    // pocket money
+    html += `<section class="card" aria-label="Pocket money" style="display:flex;flex-direction:column;gap:8px"><h2>Pocket money</h2>
+      ${row("Budget" + (m.pocketExtra ? ` <span class="sub">(includes ${money(m.pocketExtra)} side income)</span>` : ""), money(m.funBudget))}
+      ${row("Spent", money(m.funSpent))}
+      ${m.funCover > 0 ? row("Taken to cover other overspending", money(m.funCover), "var(--warn)") : ""}
+      ${row(pocketNet < 0 ? "Over by" : "Left over", money(Math.abs(pocketNet)), pocketNet < 0 ? "var(--red)" : "var(--ok)")}
+      ${m.foodN ? `<span class="sub">Ate out ${m.foodN}× for ${money(m.foodSpent)} · random ${money(Math.max(0, m.funSpent - m.foodSpent))}</span>` : ""}
+      ${funCats.length > 1 ? funCats.map((c) => row(esc(c.name), money(m.spent[c.id] || 0) + " of " + money(num(c.budget), 0))).join("") : ""}
+    </section>`;
+    // other categories
+    html += `<section class="card" aria-label="Categories" style="display:flex;flex-direction:column;gap:8px"><h2>Categories</h2>`;
+    if (!over.length) html += '<p class="sub" style="margin:0">Nothing went over budget.</p>';
+    for (const o of over) html += row(esc(o.c.name) + ` <span class="sub">${money(o.sp)} of ${money(o.b, 0)}</span>`, "+" + money(o.d), "var(--red)");
+    if (within.length) html += `<details class="gd" style="margin-top:4px"><summary>Within budget (${within.length})</summary><div class="gbody">${within.map((o) => row(esc(o.c.name) + ` <span class="sub">${money(o.sp)} of ${money(o.b, 0)}</span>`, o.b - o.sp >= 1 ? money(o.b - o.sp) + " left" : "on budget", "var(--ok)")).join("")}</div></details>`;
+    html += `</section>`;
+    // goals
+    if (goalRows.length) html += `<section class="card" aria-label="Goals" style="display:flex;flex-direction:column;gap:8px"><h2>Goals</h2>${goalRows.map((r) => { const d = round2(r.got - r.plan); return row(esc(r.g.name || "Goal") + ` <span class="sub">${money(r.got)} of ${money(r.plan, 0)}</span>`, d <= -1 ? money(-d) + " short" : d >= 1 ? "+" + money(d) + " extra" : "on plan", d <= -1 ? "var(--warn)" : "var(--ok)"); }).join("")}<span class="sub">Compared with the monthly amounts in your current plan.</span></section>`;
+    // DoorDash
+    html += `<section class="card" aria-label="DoorDash" style="display:flex;flex-direction:column;gap:8px"><h2>DoorDash</h2>`;
+    if (!dd.n) html += '<p class="sub" style="margin:0">No DoorDash income logged this month. Put “DoorDash” in the note when you log it and it shows up here.</p>';
+    else {
+      html += row("Earned", money(dd.total)) + row("Days you worked", dd.days + " of " + dd.dim) + row("Deposits logged", String(dd.n))
+        + row("Average per day worked", money(dd.avgDay)) + row("Average per deposit", money(dd.avgEntry))
+        + row("Per week (average)", dd.perWeek.toFixed(1) + " days") + row("Best day", dd.best ? money(dd.best.amount) + " · " + esc(prettyDate(dd.best.date, {month: "short", day: "numeric"})) : "")
+        + (dd.topDayN > 1 ? row("Most common day", esc(dd.topDay) + " (" + dd.topDayN + "×)") : "")
+        + (m.incomeIn > 0 ? row("Share of all income", Math.round(dd.total / m.incomeIn * 100) + "%") : "")
+        + (dd.toPocket > 0 ? row("Went to pocket money", money(dd.toPocket)) : "");
+      if (prev && prev.n) html += `<span class="sub">Last month: ${money(prev.total)} over ${prev.days} ${prev.days === 1 ? "day" : "days"}.</span>`;
+    }
+    html += `</section>`;
+    app.innerHTML = html;
+    wireReview(k);
+  }
+  function wireReview(k){
+    const p = document.getElementById("rPrev"), n = document.getElementById("rNext");
+    if (p) p.onclick = () => { S.revMonth = shiftMonth(k, -1); render(); };
+    if (n) n.onclick = () => { S.revMonth = shiftMonth(k, 1); render(); };
+  }
+
   // ---------------- history ----------------
   function renderHistory(){
     const k = S.histMonth;
@@ -1074,7 +1176,8 @@ window.LocalDB = (function(){
         <div class="stat"><span class="l">Paid in</span><span class="v">${money(m.incomeIn, 0)}</span></div>
         <div class="stat"><span class="l">Spent</span><span class="v">${money(m.spendSpent, 0)}</span></div>
         <div class="stat"><span class="l">To goals</span><span class="v">${money(m.saved, 0)}</span></div>
-      </div>`;
+      </div>
+      <button type="button" class="pillbtn ghost" data-review="${esc(k)}" style="align-self:flex-start">Month review</button>`;
     if (!loaded) html += '<p class="empty">Loading…</p>';
     else if (!rows.length) html += '<p class="empty">Nothing logged this month yet. Tap the + button to log a purchase or paycheck.</p>';
     else {
@@ -1817,6 +1920,7 @@ window.LocalDB = (function(){
       (async () => { try { await S.db.snapshot("Before using a safety copy"); await S.db.importAll(JSON.parse(x.body)); location.reload(); } catch (e){ toast("Restore failed: " + ((e && e.name) || "unknown")); } })();
       return;
     }
+    if ((el = t("[data-review]"))){ S.revMonth = el.dataset.review; S.tab = "review"; render(); window.scrollTo(0, 0); return; }
     if ((el = t("[data-go]"))){ S.tab = el.dataset.go; render(); window.scrollTo(0, 0); return; }
     if ((el = t("[data-log]"))){ openLog(el.dataset.log); return; }
     if ((el = t("[data-step]"))){ toggleStep(el.dataset.step); return; }
