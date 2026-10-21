@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Rosewood</title>
 <script>try{var _t=localStorage.getItem("mb-theme");document.documentElement.setAttribute("data-theme",_t==="classic"||_t==="pro"?_t:"sl")}catch(e){document.documentElement.setAttribute("data-theme","sl")}</script>
-<meta name="mb-build" content="1792521942">
+<meta name="mb-build" content="1792611287">
 <script>
 /* Auto-update: on open and on return to the app, check GitHub for a newer build and reload into it.
    Skips while a sheet is open so it never interrupts you mid-entry. */
-(function(){var B="1792521942";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
+(function(){var B="1792611287";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
 function chk(){fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){var m=t.match(/name="mb-build" content="(\d+)"/);if(!m||m[1]===B||Number(m[1])<Number(B))return;if(busy())return;try{if(sessionStorage.getItem("mb_rl")===m[1])return;sessionStorage.setItem("mb_rl",m[1])}catch(e){}location.replace(location.pathname+"?v="+m[1])}).catch(function(){})}
 window.addEventListener("load",function(){setTimeout(chk,1500)});document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();
 </script>
@@ -660,12 +660,13 @@ window.LocalDB = (function(){
     const stamp = (x) => x.ts || ((x.date || "") + "T12:00:00.000Z");
     for (const k in S.months) for (const t of S.months[k]) ev.push({id: t.id, at: stamp(t), counted: (t.ts || "") > since && (t.date || "") >= sinceDay, back: (t.ts || "") > since && (t.date || "") < sinceDay, chk: t.type === "income" ? num(t.amount) : -num(t.amount), sav: 0});
     for (const g of S.goals) for (const e of (g.entries || [])){ if (e.starting) continue; ev.push({id: e.id, at: stamp(e), counted: (e.ts || "") > since && (e.date || "") >= sinceDay, back: (e.ts || "") > since && (e.date || "") < sinceDay, chk: -num(e.amount), sav: num(e.amount)}); }
+    for (const j of (S.accounts.adjustments || [])) ev.push({id: j.id, at: j.ts, counted: false, back: false, chk: j.chk ? round2(j.chk.actual - j.chk.est) : 0, sav: j.sav ? round2(j.sav.actual - j.sav.est) : 0, adj: true});
     ev.sort((x, y) => y.at.localeCompare(x.at));
     const out = {}; let c = lb.checking, v = lb.savings;
     for (const x of ev){
       if (x.back) continue; // back-filled after the update: not part of the estimate
       const cb = round2(c - x.chk), vb = v == null ? null : round2(v - x.sav);
-      out[x.id] = {chk: [cb, c], sav: x.sav !== 0 && v != null ? [vb, v] : null};
+      if (!x.adj) out[x.id] = {chk: [cb, c], sav: x.sav !== 0 && v != null ? [vb, v] : null};
       c = cb; if (v != null) v = vb;
     }
     return out;
@@ -989,17 +990,34 @@ window.LocalDB = (function(){
   }
   function openAccounts(){
     const a = S.accounts || {};
+    const lb = liveBalances();
+    const estC = lb ? lb.checking : null, estS = lb ? lb.savings : null;
     const {close, el} = sheet("Account balances", `
-      <p class="sub" style="margin:0;font-size:14px">Copy the current balances from your bank app. Update them whenever you check, at least on your Sunday check-in.</p>
-      <div><label class="lab" for="acChk">Checking</label><input class="field num" id="acChk" inputmode="decimal" value="${a.checking != null ? num(a.checking) : ""}" placeholder="$0"></div>
-      <div><label class="lab" for="acSav">Savings</label><input class="field num" id="acSav" inputmode="decimal" value="${a.savings != null ? num(a.savings) : ""}" placeholder="$0"></div>
+      <p class="sub" style="margin:0;font-size:14px">Copy the current balances from your bank app. If they don't match the app's estimate, the difference is saved as a balance adjustment in History so you can see what was missing.</p>
+      <div><label class="lab" for="acChk">Checking</label><input class="field num" id="acChk" inputmode="decimal" value="${estC != null ? estC : a.checking != null ? num(a.checking) : ""}" placeholder="$0">${estC != null ? `<div class="meta" style="margin-top:4px">App estimate: ${money(estC)}</div>` : ""}</div>
+      <div><label class="lab" for="acSav">Savings</label><input class="field num" id="acSav" inputmode="decimal" value="${estS != null ? estS : a.savings != null ? num(a.savings) : ""}" placeholder="$0">${estS != null ? `<div class="meta" style="margin-top:4px">App estimate: ${money(estS)}</div>` : ""}</div>
+      <div id="adjBox" hidden><p class="hint" id="adjTxt" style="margin:0"></p><label class="lab" for="adjNote" style="margin-top:8px">What was missing? (optional)</label><input class="field" id="adjNote" autocomplete="off" placeholder="Example: phone bill"></div>
       <button type="button" class="save" id="acSave">Save balances</button>`);
+    const diffs = () => {
+      const c = el.querySelector("#acChk").value.trim(), s2 = el.querySelector("#acSav").value.trim();
+      const dc = estC != null && c !== "" ? round2(num(c) - estC) : 0, ds = estS != null && s2 !== "" ? round2(num(s2) - estS) : 0;
+      return {c, s2, dc: Math.abs(dc) >= 0.01 ? dc : 0, ds: Math.abs(ds) >= 0.01 ? ds : 0};
+    };
+    const sync = () => {
+      const d = diffs(), box = el.querySelector("#adjBox");
+      box.hidden = !(d.dc || d.ds);
+      const sg = (x) => (x < 0 ? "−" : "+") + money(Math.abs(x));
+      el.querySelector("#adjTxt").textContent = [d.dc ? "Checking is " + sg(d.dc) + " from the estimate." : "", d.ds ? "Savings is " + sg(d.ds) + " from the estimate." : ""].filter(Boolean).join(" ") + " It will be saved as a balance adjustment.";
+    };
+    el.querySelector("#acChk").oninput = sync; el.querySelector("#acSav").oninput = sync; sync();
     el.querySelector("#acSave").onclick = async () => {
-      const c = el.querySelector("#acChk").value.trim(), s = el.querySelector("#acSav").value.trim();
-      const body = {checking: c === "" ? null : round2(num(c)), savings: s === "" ? null : round2(num(s)), asOf: new Date().toISOString()};
+      const d = diffs(), c = d.c, s2 = d.s2, now = new Date();
+      const adjustments = [...(a.adjustments || [])];
+      if (d.dc || d.ds) adjustments.push({id: "adj" + now.getTime(), ts: now.toISOString(), date: ymd(now), note: el.querySelector("#adjNote").value.trim(), chk: d.dc ? {est: estC, actual: round2(num(c))} : null, sav: d.ds ? {est: estS, actual: round2(num(s2))} : null});
+      const body = {checking: c === "" ? null : round2(num(c)), savings: s2 === "" ? null : round2(num(s2)), asOf: now.toISOString(), adjustments};
       S.accounts = body; render();
       if (S.db) try { await S.db.doc("config/accounts").set(body); } catch (e){ toast("Couldn't save balances. Try again."); return; }
-      close(); toast("Balances saved");
+      close(); toast(d.dc || d.ds ? "Balances saved · adjustment logged" : "Balances saved");
     };
     setTimeout(() => el.querySelector("#acChk").focus(), 50);
   }
@@ -1116,6 +1134,8 @@ window.LocalDB = (function(){
     const tips = [];
     if (pocketOver > 0) tips.push(`Pocket money ran ${money(pocketOver)} over. Either raise it to about ${money(roundUp5(m.funBudget + pocketOver), 0)} in Plan or plan for fewer purchases.`);
     else if (m.funBudget > 0 && pocketNet >= 1) tips.push(isNow ? `Pocket money has ${money(pocketNet)} left so far.` : `Pocket money finished with ${money(pocketNet)} left. That can stay as is or move toward a goal.`);
+    const adjC = ((S.accounts || {}).adjustments || []).filter((j) => j.date.startsWith(k) && j.chk).reduce((t, j) => t + (j.chk.actual - j.chk.est), 0);
+    if (Math.abs(adjC) >= 1) tips.push(`Your checking was ${money(Math.abs(adjC))} ${adjC < 0 ? "lower" : "higher"} than the app expected after balance updates. Something was ${adjC < 0 ? "spent but not logged" : "received but not logged"}.`);
     for (const o of over.slice(0, 4)) tips.push(`${o.c.name} was ${money(o.d)} over (${money(o.sp)} spent on ${money(o.b, 0)}). A budget of about ${money(roundUp5(o.sp), 0)} would have fit.`);
     for (const r of goalShort.slice(0, 3)) tips.push(`${r.g.name || "A goal"} got ${money(r.got)} of the ${money(r.plan, 0)} planned (${money(r.plan - r.got)} short).`);
     if (dd.n) tips.push(`DoorDash brought in ${money(dd.total)} over ${dd.days} ${dd.days === 1 ? "day" : "days"}${prev && prev.n ? ` (${dd.total >= prev.total ? "up" : "down"} ${money(Math.abs(dd.total - prev.total))} from last month)` : ""}.`);
@@ -1191,6 +1211,7 @@ window.LocalDB = (function(){
       for (const {e} of ord){ const before = run; run = round2(run + num(e.amount)); bal[e.id] = [before, run]; }
       for (const e of (g.entries || [])) if (e.date.startsWith(k)) rows.push({id: e.id, date: e.date, ts: e.ts, amount: e.amount, kind: "goal", goal: g, note: e.note, edited: (e.edits || []).length > 0, bal: bal[e.id]});
     }
+    for (const j of ((S.accounts || {}).adjustments || [])) if (j.date.startsWith(k)) rows.push({id: j.id, date: j.date, ts: j.ts, kind: "adj", adj: j});
     rows.sort((a, b) => (b.date + (b.ts || "")).localeCompare(a.date + (a.ts || "")));
     let html = `
       <div class="headrow"><div class="head"><span class="date">History</span></div>${helpBtn()}</div>
@@ -1215,6 +1236,15 @@ window.LocalDB = (function(){
           day = t.date;
           html += `<div class="dayhead">${esc(prettyDate(day, {weekday: "long", month: "short", day: "numeric"}))}</div><div class="daycard">`;
           open = true;
+        }
+        if (t.kind === "adj"){
+          const j = t.adj, sg = (x) => (x < 0 ? "−" : "+") + money(Math.abs(x));
+          const lines = [j.chk ? `Checking · estimate ${money(j.chk.est)} → actual ${money(j.chk.actual)}` : "", j.sav ? `Savings · estimate ${money(j.sav.est)} → actual ${money(j.sav.actual)}` : ""].filter(Boolean);
+          const amt = [j.chk ? sg(j.chk.actual - j.chk.est) : "", j.sav ? sg(j.sav.actual - j.sav.est) : ""].filter(Boolean);
+          html += `<div class="txrow" role="group" aria-label="Balance adjustment"><span class="dot" style="--gc:var(--warn)"></span>
+            <span style="min-width:0"><div class="t1">Balance adjustment</div>${j.note ? `<div class="t2">${esc(j.note)}</div>` : ""}${lines.map((l) => `<div class="t2">${esc(l)}</div>`).join("")}</span>
+            <span class="amt" style="display:flex;flex-direction:column;align-items:flex-end;color:var(--warn)">${amt.map((x) => `<span>${x}</span>`).join("")}</span></div>`;
+          continue;
         }
         if (t.kind === "goal"){
           const a = num(t.amount);
