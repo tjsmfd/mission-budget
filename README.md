@@ -13,7 +13,7 @@ Personal budgeting PWA. All data is stored on the device (IndexedDB). This repo 
 ## Updating the app
 Updates are pushed here by Claude. The app checks GitHub every time you open it or return to it, and reloads into the newest build by itself (it waits if a sheet is open). Your data is never touched.
 
-Last updated: Oct 21, 2026 · 3:34 PM ET.
+Last updated: Oct 21, 2026 · 7:50 PM ET.
 
 If an update doesn't show: give GitHub about a minute, then fully close and reopen the app once.
 
@@ -30,3 +30,6 @@ Data lives in the phone's IndexedDB and is never part of an update. When a new v
 
 ## Month review
 History > Month review (also offered on Today in the last days of a month and the first days of the next). Computed from the logged month, so nothing extra is stored: categories and pocket money over budget, goals short of their monthly amount, DoorDash stats (entries whose note says DoorDash), and plain notes to act on when editing the plan.
+
+## Pocket money by week
+Today shows **Safe to spend now** (the bill-protecting ceiling), **This week** (an even pace of what is left over the remaining days; weeks run Sunday to Saturday), **This month**, a **Can I afford it?** checker, and a collapsible list of the month's weeks. Logging a pocket-money expense that is over the pace or over the safe amount shows a warning in the log sheet.

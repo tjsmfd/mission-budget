@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Rosewood</title>
 <script>try{var _t=localStorage.getItem("mb-theme");document.documentElement.setAttribute("data-theme",_t==="classic"||_t==="pro"?_t:"sl")}catch(e){document.documentElement.setAttribute("data-theme","sl")}</script>
-<meta name="mb-build" content="1792611287">
+<meta name="mb-build" content="1792626610">
 <script>
 /* Auto-update: on open and on return to the app, check GitHub for a newer build and reload into it.
    Skips while a sheet is open so it never interrupts you mid-entry. */
-(function(){var B="1792611287";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
+(function(){var B="1792626610";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
 function chk(){fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){var m=t.match(/name="mb-build" content="(\d+)"/);if(!m||m[1]===B||Number(m[1])<Number(B))return;if(busy())return;try{if(sessionStorage.getItem("mb_rl")===m[1])return;sessionStorage.setItem("mb_rl",m[1])}catch(e){}location.replace(location.pathname+"?v="+m[1])}).catch(function(){})}
 window.addEventListener("load",function(){setTimeout(chk,1500)});document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();
 </script>
@@ -336,6 +336,35 @@ html[data-theme="sl"] .tab[aria-current="page"]{background:none;color:var(--fg)}
 html[data-theme="sl"] .tab[aria-current="page"] svg{color:#D2A0AE}
 html[data-theme="sl"] .tab[aria-current="page"]::after{content:"";position:absolute;bottom:0;left:50%;width:20px;height:2.5px;margin-left:-10px;border-radius:2px;background:#D2A0AE;box-shadow:0 0 8px rgba(210,160,174,.8)}
 
+
+/* ===== Pocket money by week ===== */
+.pbig{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.pbig .card{padding:16px;display:flex;flex-direction:column;gap:4px}
+.l2{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.n2{font-size:32px;font-weight:800;letter-spacing:-.03em;line-height:1.05}
+.n2.neg{color:var(--red)}
+.pchk{display:flex;flex-direction:column;gap:8px}
+.pchk .qa{display:flex;gap:8px;flex-wrap:wrap}
+.verdict{border-radius:16px;padding:12px 14px;font-size:14px;line-height:1.45}
+.verdict b{display:block;margin-bottom:2px}
+.verdict.ok{background:var(--ok-tint)}.verdict.mid{background:var(--warn-tint)}.verdict.bad{background:var(--red-tint)}
+.pweeks>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;min-height:44px;-webkit-tap-highlight-color:transparent}
+.pweeks>summary::-webkit-details-marker{display:none}
+.pweeks>summary::after{content:"";flex:none;width:9px;height:9px;margin-right:4px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg) translateY(-2px);transition:transform .18s}
+.pweeks[open]>summary::after{transform:rotate(-135deg) translateY(-2px)}
+.pwb{margin-top:10px}
+.pwr{display:flex;flex-direction:column;gap:5px;padding:12px 0;border-top:1px solid rgba(255,255,255,.07)}
+.pwr:first-child{border-top:0;padding-top:4px}
+.pwr .t{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:14px}
+.pwr .t span{font-size:12px;font-weight:700;color:var(--muted)}
+.pwr .t span.now{color:var(--accent)}
+.pwr .tr{height:12px;border-radius:7px;background:var(--track);overflow:hidden}
+.pwr .tr i{display:block;height:100%;border-radius:7px;background:linear-gradient(90deg,var(--rg1,var(--accent)),var(--rg2,var(--accent)))}
+.pwr .tr i.mid{background:linear-gradient(90deg,#C9A23A,var(--warn))}.pwr .tr i.bad{background:linear-gradient(90deg,#D4493D,var(--red))}.pwr .tr i.done{background:linear-gradient(90deg,#4D8F77,var(--ok))}
+.pwr.fut .tr{background:none;box-shadow:inset 0 0 0 1.5px var(--track)}
+.pwr .c{font-size:12.5px;color:var(--muted);line-height:1.4}.pwr .c b{color:var(--fg)}
+.paceWarn{border-radius:14px;padding:10px 12px;font-size:13px;line-height:1.45}
+.paceWarn.bad{background:var(--red-tint);color:var(--fg)}.paceWarn.mid{background:var(--warn-tint);color:var(--fg)}
 /* ===== Status dropdown (Today) ===== */
 .dd{margin-top:2px}
 .dd>summary{list-style:none;display:flex;align-items:center;gap:10px;min-height:48px;padding:0 14px;border-radius:16px;background:var(--card2);cursor:pointer;-webkit-tap-highlight-color:transparent}
@@ -863,6 +892,82 @@ window.LocalDB = (function(){
       ${body}
     </section>`;
   }
+  // ---------------- pocket money by week ----------------
+  // "Safe now" protects bills (forecast). "This week" is a pace: what is left of pocket money split over the days left, weeks run Sunday to Saturday.
+  function safeNow(m){
+    const acc = S.accounts, loading = S.status === "loading";
+    const fresh = acc && acc.checking != null && acc.asOf && (Date.now() - new Date(acc.asOf).getTime()) < 7 * 864e5;
+    const fc = fresh && !loading ? forecast() : null;
+    return fc ? Math.max(0, Math.min(m.funLeft, fc.spendable)) : m.funLeft;
+  }
+  function pocketPlan(m, spendNow){
+    if (!(m.funBudget > 0)) return null;
+    const now = new Date(), y = now.getFullYear(), mo = now.getMonth(), today = now.getDate(), dim = new Date(y, mo + 1, 0).getDate();
+    const funIds = new Set(cats().filter((c) => roleOf(c) === "fun").map((c) => c.id));
+    const byDay = {};
+    for (const t of m.tx) if (t.type !== "income" && funIds.has(t.categoryId)){ const d = Number(String(t.date).slice(8, 10)); byDay[d] = (byDay[d] || 0) + num(t.amount); }
+    const weeks = []; let st = 1;
+    while (st <= dim){ const dow = new Date(y, mo, st).getDay(), e = Math.min(dim, st + (6 - dow)); weeks.push({s: st, e, days: e - st + 1}); st = e + 1; }
+    const pool = m.funBudget - m.funCover; let before = 0, cur = null;
+    for (const w of weeks){
+      w.spent = 0; for (let d = w.s; d <= w.e; d++) w.spent += byDay[d] || 0;
+      w.target = Math.max(0, (pool - before) / (dim - w.s + 1) * w.days);
+      w.state = today > w.e ? "past" : today >= w.s ? "now" : "fut";
+      before += w.state === "fut" ? w.target : w.state === "now" ? Math.max(w.spent, w.target) : w.spent;
+      if (w.state === "now") cur = w;
+    }
+    if (!cur) return null;
+    const after = dim - cur.e;
+    return {weeks, cur, y, mo, dim, today, weekLeft: round2(cur.target - cur.spent), monthLeft: m.funLeft, safe: spendNow, daysLeftWk: cur.e - today + 1, daysAfter: after, pool, before0: pool - weeks.filter((w) => w.state === "past").reduce((a, w) => a + w.spent, 0)};
+  }
+  function pocketVerdict(p, a){
+    if (!(a > 0)) return null;
+    if (a > p.monthLeft + 0.004) return {t: "bad", h: "Over your whole pocket budget", p: `This is ${money(a - p.monthLeft)} more than you have left this month.`};
+    if (a > p.safe + 0.004) return {t: "bad", h: "Not safe yet", p: `Only ${money(p.safe)} is safe right now. Spending ${money(a)} would cut into bills due before your next payday (${money(a - p.safe)} short). Wait for payday or spend less.`};
+    if (a <= p.weekLeft + 0.004) return {t: "ok", h: "Fits this week", p: `You would still have ${money(p.weekLeft - a)} left this week and ${money(p.safe - a)} safe to spend.`};
+    const over = a - p.weekLeft, drop = p.daysAfter > 0 ? over / p.daysAfter * 7 : over;
+    return {t: "mid", h: "Safe, but over this week's pace", p: `It is ${money(over)} past this week's share. Your bills stay covered.${p.daysAfter > 0 ? ` Each later week's pace would drop by about ${money(drop)} to make it up.` : ""}`};
+  }
+  const wkLabel = (p, w) => { const f = (d) => new Date(p.y, p.mo, d).toLocaleString("en-US", {month: "short", day: "numeric"}); return w.s === w.e ? f(w.s) : f(w.s) + "–" + (new Date(p.y, p.mo, w.s).getMonth() === new Date(p.y, p.mo, w.e).getMonth() ? w.e : f(w.e)); };
+  function pocketWeekHTML(p){
+    const lvl = (r) => r >= 0.9 ? "bad" : r >= 0.7 ? "mid" : "";
+    const bcl = (r) => r >= 0.9 ? "over" : r >= 0.7 ? "warn" : "";
+    const wr = p.cur.target > 0 ? p.cur.spent / p.cur.target : (p.cur.spent > 0 ? 2 : 0), used = p.pool > 0 ? (p.pool - p.monthLeft + (p.pool - p.pool)) : 0;
+    const monthUsed = (p.pool + 0) > 0 ? Math.max(0, Math.min(1, (p.pool - p.monthLeft) / p.pool)) : 0;
+    const v = S.pkVerdict ? pocketVerdict(p, S.pkVerdict) : null;
+    const name = new Date(p.y, p.mo, 1).toLocaleString("en-US", {month: "long"});
+    const rows = p.weeks.map((w) => {
+      const r = w.target > 0 ? w.spent / w.target : (w.spent > 0 ? 2 : 0);
+      const cl = w.state === "past" ? (r > 1 ? "bad" : "done") : w.state === "now" ? lvl(r) : "";
+      const tag = w.state === "past" ? (w.spent <= w.target + 0.004 ? "Done" : "Over") : w.state === "now" ? "This week" : (w.days < 7 ? w.days + (w.days === 1 ? " day" : " days") : "Coming up");
+      const cap = w.state === "past" ? `Spent <b>${money(w.spent, 0)}</b> of ${money(w.target, 0)} · ` + (w.spent <= w.target + 0.004 ? `<b>${money(w.target - w.spent, 0)} under</b>, rolled forward` : `<b>${money(w.spent - w.target, 0)} over</b>, came out of later weeks`)
+        : w.state === "now" ? `Spent <b>${money(w.spent, 0)}</b> of ${money(w.target, 0)} · <b>${w.target - w.spent < 0 ? money(w.spent - w.target, 0) + " over" : money(w.target - w.spent, 0) + " left"}</b> · ${p.daysLeftWk} ${p.daysLeftWk === 1 ? "day" : "days"} to go`
+        : `Pace <b>${money(w.target, 0)}</b> to spend`;
+      return `<div class="pwr ${w.state === "fut" ? "fut" : ""}"><div class="t"><b>${esc(wkLabel(p, w))}</b><span class="${w.state === "now" ? "now" : ""}">${tag}</span></div><div class="tr"><i class="${cl}" style="width:${w.state === "fut" ? 0 : Math.min(100, r * 100)}%"></i></div><div class="c">${cap}</div></div>`;
+    }).join("");
+    return `
+      <div class="pbig">
+        <section class="card" aria-label="This week"><span class="l2">This week</span><span class="n2 ${p.weekLeft < 0 ? "neg" : ""}">${p.weekLeft < 0 ? "−" : ""}${money(Math.abs(p.weekLeft), 0)}</span><span class="sub">${p.weekLeft < 0 ? "over" : "left"} of ${money(p.cur.target, 0)} pace</span><div class="bar"><i class="${bcl(wr)}" style="width:${Math.min(100, wr * 100)}%"></i></div></section>
+        <section class="card" aria-label="This month"><span class="l2">This month</span><span class="n2 ${p.monthLeft < 0 ? "neg" : ""}">${p.monthLeft < 0 ? "−" : ""}${money(Math.abs(p.monthLeft), 0)}</span><span class="sub">left of ${money(p.pool, 0)} budget</span><div class="bar"><i class="${bcl(monthUsed)}" style="width:${monthUsed * 100}%"></i></div></section>
+      </div>
+      <section class="card pchk" aria-label="Can I afford it?"><span class="l2">Can I afford it?</span><span class="sub">Type a price and tap Check, like for a limited-time purchase.</span>
+        <input class="field num" id="pkQ" inputmode="decimal" autocomplete="off" enterkeyhint="done" placeholder="$0.00" aria-label="Price of purchase" value="${esc(S.pkDraft || "")}">
+        ${v ? `<div class="verdict ${v.t}" role="status"><b>${esc(v.h)}</b>${esc(v.p)}</div>` : ""}
+        <div class="qa"><button type="button" class="pillbtn" id="pkCheck">Check</button>${v && v.t !== "bad" ? '<button type="button" class="pillbtn ghost" id="pkLog">Log it</button>' : ""}</div>
+      </section>
+      <details class="card pweeks" data-wk ${S.wkOpen ? "open" : ""}><summary><span><span class="l2" style="display:block">Your weeks in ${esc(name)}</span><span class="sub" style="display:block;margin-top:3px">This week: ${money(Math.max(0, p.weekLeft), 0)} left of ${money(p.cur.target, 0)}</span></span></summary><div class="pwb">${rows}<p class="sub" style="margin:8px 0 0">Weeks run Sunday to Saturday. Each week gets an even share of what is left. Unspent money rolls forward and overspending comes out of later weeks.</p></div></details>`;
+  }
+  function wirePocket(p){
+    if (!p) return;
+    const q = document.getElementById("pkQ"); if (!q) return;
+    const run = () => { const a = round2(num(q.value)); S.pkDraft = q.value; S.pkVerdict = a > 0 ? a : 0; render(); };
+    q.oninput = () => { S.pkDraft = q.value; if (S.pkVerdict){ S.pkVerdict = 0; const vd = app.querySelector(".pchk .verdict"); if (vd) vd.remove(); const lg = document.getElementById("pkLog"); if (lg) lg.remove(); } };
+    q.onkeydown = (e) => { if (e.key === "Enter"){ e.preventDefault(); run(); } };
+    document.getElementById("pkCheck").onclick = run;
+    const lg = document.getElementById("pkLog");
+    if (lg) lg.onclick = () => { const a = S.pkVerdict, fun = cats().find((c) => roleOf(c) === "fun"); S.pkVerdict = 0; S.pkDraft = ""; openLog(fun ? fun.id : null); const amt = document.getElementById("amt"); if (amt){ amt.value = a; amt.dispatchEvent(new Event("input")); } };
+  }
+
   function renderToday(){
     const now = new Date(), k = monthKey(now), loading = S.status === "loading";
     const m = monthStats(k);
@@ -874,6 +979,7 @@ window.LocalDB = (function(){
     const cover = fc ? fc.spendable : null;
     let check = "";
     const spendNow = cover === null ? m.funLeft : Math.max(0, Math.min(m.funLeft, cover));
+    const plan = loading ? null : pocketPlan(m, spendNow);
     const dshort = (d) => d.toLocaleString("en-US", {month: "short", day: "numeric"});
     if (!loading && m.funBudget > 0){
       if (!fc) check = `<span class="sub">Update your checking balance (Accounts below) so this number accounts for your bills and paydays.</span>`;
@@ -901,13 +1007,14 @@ window.LocalDB = (function(){
         <div class="hero">
           ${ringSVG(p)}
           <div class="txt">
-            <span class="sub" style="font-size:14px">Free to spend right now</span>
+            <span class="sub" style="font-size:14px">Safe to spend now</span>
             <span class="big ${m.funLeft < 0 ? "neg" : ""}">${loading ? "—" : money(m.funLeft < 0 ? m.funLeft : spendNow)}</span>
             <span class="sub">${loading ? "Loading your budget…" : m.funBudget <= 0 ? "Mark a category as Pocket money in Plan" : m.funLeft < 0 ? "Over your pocket money by " + money(-m.funLeft) : money(m.funLeft) + " pocket money budget left this month" + (m.pocketExtra ? " (incl. " + money(m.pocketExtra, 0) + " side income)" : "") + " · " + m.daysLeft + (m.daysLeft === 1 ? " day" : " days") + " to go"}</span>
           </div>
         </div>
         ${dd}
       </section>
+      ${plan ? pocketWeekHTML(plan) : ""}
       ${loading ? "" : doorDashCard(m, fc, k)}
       ${fc && (fc.missing.length || fc.paysMissing.length) ? `<div class="notice soft"><span>Your forecast is missing ${esc([...fc.missing.map((x) => x + " due day"), ...fc.paysMissing.map((x) => x + " payday")].join(", "))}. Add it in Plan so Free to spend is accurate.</span><button type="button" data-go="plan">Plan</button></div>` : ""}
       <div class="stats">
@@ -961,6 +1068,7 @@ window.LocalDB = (function(){
       html += '<p class="foot">Tap a category to log a purchase in it</p>';
     }
     app.innerHTML = html;
+    wirePocket(plan);
   }
 
   // ---------------- accounts ----------------
@@ -1538,6 +1646,7 @@ window.LocalDB = (function(){
     const {close, el} = sheet(ex ? "Edit transaction" : "Log transaction", `
       <div class="typetog" role="group" aria-label="Type"><button type="button" data-type="expense" aria-pressed="true">Expense</button><button type="button" data-type="income" aria-pressed="false">Income</button></div>
       <div><label class="lab" for="amt">Amount</label><div class="amountwrap"><span>$</span><input class="amount" id="amt" inputmode="decimal" autocomplete="off" placeholder="0.00" value="${ex ? num(ex.amount) : ""}"></div></div>
+      <div id="paceWarn" class="paceWarn" hidden role="status"></div>
       <div class="pick" id="catPick">${catChips}</div>
       <div id="tagPick" hidden><div class="chiphead">What was it?</div><div class="typetog" role="group" aria-label="Kind of pocket money purchase"><button type="button" data-tag="food">Ate out</button><button type="button" data-tag="random">Random</button></div></div>
       <div class="pick" id="srcPick" hidden>${srcChips}<p class="hint" style="margin:0">Log take-home pay: the amount that hit your bank.</p></div>
@@ -1571,6 +1680,13 @@ window.LocalDB = (function(){
       const allToPocket = showPk && a > 0 && pv >= a;
       saveBtn.disabled = !valid();
       saveBtn.textContent = ex ? "Save changes" : allToPocket ? "Save to pocket money" : st.type === "income" ? "Save and plan it" : "Save";
+      const pw = el.querySelector("#paceWarn"); let wv = null;
+      if (!ex && isFun() && a > 0 && !/^\d{4}-\d\d-\d\d$/.test("") ){
+        const mm = monthStats(monthKey(new Date())), pp = pocketPlan(mm, safeNow(mm));
+        if (pp){ wv = pocketVerdict(pp, a); if (wv && wv.t === "ok") wv = null; }
+      }
+      pw.hidden = !wv;
+      if (wv){ pw.className = "paceWarn " + wv.t; pw.innerHTML = "<b>" + esc(wv.h) + ".</b> " + esc(wv.p); if (wv.t === "bad") saveBtn.textContent = "Save anyway"; }
       el.querySelectorAll("[data-type]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.type === st.type));
       el.querySelector("#catPick").hidden = st.type === "income";
       el.querySelector("#srcPick").hidden = st.type !== "income";
@@ -2014,7 +2130,7 @@ window.LocalDB = (function(){
     if (cr){ const c = draft.categories.find((x) => x.id === cr.dataset.cat); if (c) c[f] = e.target.value; }
     queueSave();
   };
-  app.addEventListener("toggle", (e) => { const d = e.target; if (d && d.matches && d.matches("details[data-dd]")) S.ddOpen = d.open; }, true);
+  app.addEventListener("toggle", (e) => { const d = e.target; if (d && d.matches && d.matches("details[data-dd]")) S.ddOpen = d.open; if (d && d.matches && d.matches("details[data-wk]")) S.wkOpen = d.open; }, true);
   app.addEventListener("input", onEdit);
   app.addEventListener("change", (e) => { if (e.target.tagName === "SELECT") onEdit(e); else if (e.target.id === "coverOver" && draft){ draft.coverOver = e.target.checked; queueSave(); } });
 
