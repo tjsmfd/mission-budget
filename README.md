@@ -13,7 +13,7 @@ Personal budgeting PWA. All data is stored on the device (IndexedDB). This repo 
 ## Updating the app
 Updates are pushed here by Claude. The app checks GitHub every time you open it or return to it, and reloads into the newest build by itself (it waits if a sheet is open). Your data is never touched.
 
-Last updated: Oct 21, 2026 · 7:50 PM ET.
+Last updated: Oct 25, 2026 · 10:01 PM ET.
 
 If an update doesn't show: give GitHub about a minute, then fully close and reopen the app once.
 
@@ -33,3 +33,6 @@ History > Month review (also offered on Today in the last days of a month and th
 
 ## Pocket money by week
 Today shows **Safe to spend now** (the bill-protecting ceiling), **This week** (an even pace of what is left over the remaining days; weeks run Sunday to Saturday), **This month**, a **Can I afford it?** checker, and a collapsible list of the month's weeks. Logging a pocket-money expense that is over the pace or over the safe amount shows a warning in the log sheet.
+
+## Morning paper
+Guide > Morning paper. Paste the paper link from your Fuller Dispatch Apps Script and the app sends three things to your own Google Drive whenever it opens or you log something: safe to spend, bills due in the next 7 days, and next payday. Balances and transactions never leave the phone. Unlink any time.

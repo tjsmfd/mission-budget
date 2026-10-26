@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Rosewood</title>
 <script>try{var _t=localStorage.getItem("mb-theme");document.documentElement.setAttribute("data-theme",_t==="classic"||_t==="pro"?_t:"sl")}catch(e){document.documentElement.setAttribute("data-theme","sl")}</script>
-<meta name="mb-build" content="1792626610">
+<meta name="mb-build" content="1792980108">
 <script>
 /* Auto-update: on open and on return to the app, check GitHub for a newer build and reload into it.
    Skips while a sheet is open so it never interrupts you mid-entry. */
-(function(){var B="1792626610";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
+(function(){var B="1792980108";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
 function chk(){fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){var m=t.match(/name="mb-build" content="(\d+)"/);if(!m||m[1]===B||Number(m[1])<Number(B))return;if(busy())return;try{if(sessionStorage.getItem("mb_rl")===m[1])return;sessionStorage.setItem("mb_rl",m[1])}catch(e){}location.replace(location.pathname+"?v="+m[1])}).catch(function(){})}
 window.addEventListener("load",function(){setTimeout(chk,1500)});document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();
 </script>
@@ -575,9 +575,49 @@ window.LocalDB = (function(){
   }
 
   // ---------------- render ----------------
+  // ---------------- morning paper (The Fuller Dispatch) ----------------
+  // Sends a short money summary (safe to spend, bills due in the next 7 days, next payday) to TJ's own Apps Script,
+  // which saves it in his Google Drive for the printed morning paper. Nothing is sent until a paper link is saved in Guide.
+  const PAPER = () => { try { return (localStorage.getItem("fd_paper") || "").trim(); } catch (e){ return ""; } };
+  let paperT = null, paperSig = "";
+  function paperSummary(){
+    const now = new Date(), k = monthKey(now);
+    if (!(k in S.months)) return null;
+    const m = monthStats(k), safe = safeNow(m), p = pocketPlan(m, safe);
+    const acc = S.accounts, fresh = !!(acc && acc.checking != null && acc.asOf && (Date.now() - new Date(acc.asOf).getTime()) < 7 * 864e5);
+    const t0 = new Date(); t0.setHours(0, 0, 0, 0);
+    const bills = billEvents(t0, 7).ev.filter((e) => e.kind === 0).sort((a, b) => a.d - b.d).map((e) => ({name: e.label, amount: round2(-e.amt), date: ymd(e.d)}));
+    let next = null;
+    for (const i of incomes()){ if (num(i.amount) <= 0) continue; const np = nextPay(i); if (np && (!next || np.d < next.d)) next = {name: i.name || "Paycheck", d: np.d, est: !!np.inferred}; }
+    return {safeToSpend: round2(safe), weekLeft: p ? round2(p.weekLeft) : null, balanceFresh: fresh, billsNext7Days: bills, nextPayday: next ? {name: next.name, date: ymd(next.d), dateEstimated: next.est} : null};
+  }
+  function paperSend(force){
+    const url = PAPER(); if (!url || S.status !== "live") return;
+    let data; try { data = paperSummary(); } catch (e){ return; }
+    if (!data) return;
+    const sig = ymd(new Date()) + JSON.stringify(data); if (!force && sig === paperSig) return;
+    paperSig = sig;
+    fetch(url, {method: "POST", mode: "no-cors", body: JSON.stringify({action: "feed", app: "rosewood", at: new Date().toISOString(), data})})
+      .then(() => { try { localStorage.setItem("fd_paper_at", new Date().toISOString()); } catch (e){} if (force) toast("Sent to your morning paper"); })
+      .catch(() => { paperSig = ""; if (force) toast("Couldn't reach your paper link. Check your connection."); });
+  }
+  const queuePaper = () => { if (!PAPER()) return; clearTimeout(paperT); paperT = setTimeout(() => paperSend(false), 2500); };
+  function paperGuideHTML(){
+    if (PAPER()){
+      let at = ""; try { at = localStorage.getItem("fd_paper_at") || ""; } catch (e){}
+      return `<p>Linked to <b>The Fuller Dispatch</b>. When the app opens or you log something, it sends three things to your own Google Drive for your printed morning paper: <b>safe to spend</b>, <b>bills due in the next 7 days</b>, and your <b>next payday</b>. Balances and transactions stay on this phone.</p>
+        <p class="hint">Last sent: ${at ? esc(new Date(at).toLocaleString("en-US", {month: "short", day: "numeric", hour: "numeric", minute: "2-digit"})) : "not yet"}</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="pillbtn" data-paper-send>Send now</button><button type="button" class="pillbtn ghost" data-paper-x>Unlink</button></div>`;
+    }
+    return `<p>Show your safe-to-spend number, bills due this week, and next payday in <b>The Fuller Dispatch</b>, your printed morning paper. Paste the paper link from your Dispatch script below. Balances and transactions never leave this phone.</p>
+      <input class="field" id="paperUrl" placeholder="https://script.google.com/macros/s/…/exec?k=…" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Paper link">
+      <div><button type="button" class="pillbtn" data-paper-save>Save link</button></div>`;
+  }
+
   function render(){
     document.querySelectorAll(".tab").forEach((b) => { if (b.dataset.tab === S.tab) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
     ({today: renderToday, goals: renderGoals, history: renderHistory, plan: renderPlan, guide: renderGuide, forecast: renderForecast, review: renderReview})[S.tab]();
+    queuePaper();
   }
   const helpBtn = () => `<button type="button" class="iconbtn" data-go="guide" aria-label="Open the guide">${IC.help}</button>`;
 
@@ -1577,6 +1617,7 @@ window.LocalDB = (function(){
         <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="pillbtn" data-backup>Back up now</button><button type="button" class="pillbtn ghost" data-restore>Restore from file</button></div>
         ${(S.snaps || []).length ? `<p class="hint" style="margin:10px 0 4px"><b>Automatic safety copies.</b> The app keeps its own copy of your data when an update arrives or before a restore. These are inside the app, so still save a file backup too.</p>${S.snaps.map((x, i) => `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0"><span class="hint" style="margin:0">${esc(new Date(x.at).toLocaleString("en-US", {month: "short", day: "numeric", hour: "numeric", minute: "2-digit"}))} · ${esc(x.label)}</span><button type="button" class="pillbtn ghost" data-snap="${i}">Restore</button></div>`).join("")}` : ""}
       </div></details>
+      <details class="gd"><summary>Morning paper</summary><div class="gbody">${paperGuideHTML()}</div></details>
       <details class="gd"><summary>How to log</summary><div class="gbody">${RULES.map(([c, t]) => `<div class="rule"><span class="dot" style="--gc:${c}"></span><p>${t}</p></div>`).join("")}</div></details>
       <details class="gd"><summary>Paycheck budgeting</summary><div class="gbody">
         <p>Your stipend is the same each month, so the plan counts it exactly. Your Dick's pay varies, so the plan uses your <b>typical</b> paycheck to estimate the month.</p>
@@ -2086,6 +2127,14 @@ window.LocalDB = (function(){
     let el;
     if ((el = t("[data-theme-set]"))){ setTheme(el.dataset.themeSet); return; }
     if ((el = t("[data-backup]"))){ exportBackup(); return; }
+    if ((el = t("[data-paper-save]"))){
+      const v = ((document.getElementById("paperUrl") || {}).value || "").trim();
+      if (!/^https:\/\/script\.google(usercontent)?\.com\//.test(v)){ toast("That doesn't look like a paper link. It starts with https://script.google.com/"); return; }
+      try { localStorage.setItem("fd_paper", v); } catch (e){ toast("Couldn't save the link on this phone."); return; }
+      paperSig = ""; paperSend(true); render(); return;
+    }
+    if ((el = t("[data-paper-send]"))){ paperSig = ""; paperSend(true); return; }
+    if ((el = t("[data-paper-x]"))){ try { localStorage.removeItem("fd_paper"); localStorage.removeItem("fd_paper_at"); } catch (e){} toast("Morning paper unlinked"); render(); return; }
     if ((el = t("[data-restore]"))){ pickRestore(); return; }
     if ((el = t("[data-snap]"))){
       const x = (S.snaps || [])[Number(el.dataset.snap)]; if (!x) return;
