@@ -13,7 +13,12 @@ Personal budgeting PWA. All data is stored on the device (IndexedDB). This repo 
 ## Updating the app
 Updates are pushed here by Claude. The app checks GitHub every time you open it or return to it, and reloads into the newest build by itself (it waits if a sheet is open). Your data is never touched.
 
-Last updated: Oct 28, 2026 · 8:13 PM ET.
+## Rosewood design, DoorDash log and goal dates
+- Burgundy and champagne theme, soft serif numbers, rose mark, launch animation and celebratory add-money animations.
+- Goals can have an exact date, a first checkpoint, and be marked "DoorDash funds this".
+- Log a dash (earned, miles, hours) on Today. Gas is miles / mpg x price (Fusion mpg and gas price are editable). The net after gas counts toward the goal, and the card says how much to earn or how many hours to dash. If you fall behind, it offers to move the gap from pocket money, only with your OK.
+
+Last updated: Oct 28, 2026 · 8:16 PM ET.
 
 If an update doesn't show: give GitHub about a minute, then fully close and reopen the app once.
 

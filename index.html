@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Rosewood</title>
 <script>try{var _t=localStorage.getItem("mb-theme");document.documentElement.setAttribute("data-theme",_t==="classic"||_t==="pro"?_t:"sl")}catch(e){document.documentElement.setAttribute("data-theme","sl")}</script>
-<meta name="mb-build" content="1793232785">
+<meta name="mb-build" content="1793232978">
 <script>
 /* Auto-update: on open and on return to the app, check GitHub for a newer build and reload into it.
    Skips while a sheet is open so it never interrupts you mid-entry. */
-(function(){var B="1793232785";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
+(function(){var B="1793232978";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
 function chk(){fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){var m=t.match(/name="mb-build" content="(\d+)"/);if(!m||m[1]===B||Number(m[1])<Number(B))return;if(busy())return;try{if(sessionStorage.getItem("mb_rl")===m[1])return;sessionStorage.setItem("mb_rl",m[1])}catch(e){}location.replace(location.pathname+"?v="+m[1])}).catch(function(){})}
 window.addEventListener("load",function(){setTimeout(chk,1500)});document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();
 </script>
@@ -615,6 +615,167 @@ window.LocalDB = (function(){
   }
 
   // ---------------- render ----------------
+
+  // ---------------- DoorDash log + dash plan ----------------
+  const DASH_DEF = {mpg: 27, gas: 3.1};
+  const dashCfg = () => ({...DASH_DEF, ...((S.dash && S.dash.cfg) || {})});
+  const dashItems = () => (S.dash && S.dash.items) || [];
+  const gasCost = (miles) => { const c = dashCfg(); return c.mpg > 0 ? round2(num(miles) / c.mpg * c.gas) : 0; };
+  const weekStartOf = (d) => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - x.getDay()); return x; };
+  const sumDash = (list) => list.reduce((a, x) => ({n: a.n + 1, earn: a.earn + num(x.earn), gas: a.gas + num(x.gas), net: a.net + num(x.net), miles: a.miles + num(x.miles), hours: a.hours + num(x.hours)}), {n: 0, earn: 0, gas: 0, net: 0, miles: 0, hours: 0});
+  async function saveDash(patch){
+    S.dash = {items: [], ...(S.dash || {}), ...patch};
+    if (S.db) { try { await S.db.doc("config/dashlog").set(JSON.parse(JSON.stringify(S.dash))); } catch (e){ toast("Couldn't save the dash log. Try again."); } }
+    render();
+  }
+  const ddGoal = () => S.goals.find((g) => g.dd && g.kind !== "setaside" && num(g.target) > 0 && goalBalance(g) < num(g.target) - 0.005) || null;
+  function dashPlan(){
+    const g = ddGoal(); if (!g) return null;
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const due = g.due ? parseD(g.due) : g.date ? new Date(parseD(g.date).getFullYear(), parseD(g.date).getMonth() + 1, 0) : null;
+    if (!due) return null;
+    const bal = goalBalance(g), tgt = num(g.target), ck = g.check && num(g.check.amount) > 0 && g.check.date ? {amount: num(g.check.amount), d: parseD(g.check.date)} : null;
+    const useCk = ck && bal < ck.amount - 0.005 && ck.amount < tgt;
+    const stage = useCk ? {amount: ck.amount, d: ck.d, ck: true} : {amount: tgt, d: due, ck: false};
+    const dayMs = 864e5, daysLeft = Math.max(1, Math.round((stage.d - today) / dayMs) + 1), late = stage.d < today;
+    const remaining = round2(Math.max(0, stage.amount - bal)), finalRemaining = round2(Math.max(0, tgt - bal));
+    const finalDays = Math.max(1, Math.round((due - today) / dayMs) + 1);
+    const perWeek = round2(finalRemaining / finalDays * 7);
+    const all = sumDash(dashItems()), ws = weekStartOf(today), wk = sumDash(dashItems().filter((x) => x.date >= ymd(ws) && x.date <= ymd(addDays(ws, 6))));
+    const rate = all.n >= 3 && all.hours > 0 ? all.net / all.hours : null;
+    const gasShare = all.earn > 0 ? all.gas / all.earn : 0.15;
+    const weekLeft = round2(Math.max(0, perWeek - wk.net));
+    const first = dashItems().map((x) => x.date).sort()[0];
+    const span = first ? Math.max(7, Math.round((today - parseD(first)) / dayMs) + 1) : 7;
+    const cap = all.n >= 3 ? all.net / span : null;
+    let behind = false, gap = 0;
+    if (late && remaining > 0){ behind = true; gap = remaining; }
+    else if (cap != null && remaining > cap * daysLeft + 0.5){ behind = true; gap = round2(remaining - cap * daysLeft); }
+    else if (cap == null && daysLeft <= 3 && remaining > 0){ behind = true; gap = remaining; }
+    const m = monthStats(monthKey(today)), pocketLeft = Math.max(0, round2(m.funLeft));
+    return {g, bal, tgt, due, stage, daysLeft, late, remaining, finalRemaining, perWeek, all, wk, rate, gasShare, weekLeft, cap, behind, gap, cover: Math.min(gap, pocketLeft), pocketLeft};
+  }
+  function dashCardHTML(){
+    const c = dashCfg(), today = new Date(), ws = weekStartOf(today);
+    const wk = sumDash(dashItems().filter((x) => x.date >= ymd(ws) && x.date <= ymd(addDays(ws, 6))));
+    const P = dashPlan(), ds = (d) => d.toLocaleString("en-US", {month: "short", day: "numeric"});
+    let html = `<section class="card dashcard" aria-label="DoorDash" style="display:flex;flex-direction:column;gap:12px">
+      <div class="l1"><h2>DoorDash this week</h2><button type="button" class="pillbtn" data-dash-log>Log a dash</button></div>
+      <div class="stats">
+        <div class="stat"><span class="l">Earned</span><span class="v">${money(wk.earn, 0)}</span></div>
+        <div class="stat"><span class="l">Gas</span><span class="v" style="color:var(--red)">−${money(wk.gas, 0).replace("$", "$")}</span></div>
+        <div class="stat"><span class="l">Kept</span><span class="v" style="color:var(--ok)">${money(wk.net, 0)}</span></div>
+      </div>`;
+    if (wk.n){
+      const share = wk.earn > 0 ? Math.round(wk.gas / wk.earn * 100) : 0;
+      html += `<div class="bar" style="--gc:var(--warn)"><i class="${share >= 25 ? "over" : share >= 15 ? "warn" : ""}" style="width:${Math.min(100, share)}%"></i></div>
+      <span class="meta">${share}% of what you earned went to gas${wk.hours > 0 ? " · " + money(wk.net / wk.hours) + "/hr after gas" : ""} · ${wk.n} dash${wk.n === 1 ? "" : "es"}, ${Math.round(wk.miles)} mi</span>`;
+    } else html += `<span class="meta">No dashes logged this week. Log one after each dash: what you earned, the miles and the hours. I'll take out the gas.</span>`;
+    if (P){
+      const pct = Math.min(100, P.bal / P.tgt * 100), st = P.stage;
+      html += `<div style="border-top:1px solid rgba(255,255,255,.08);padding-top:12px;display:flex;flex-direction:column;gap:8px">
+        <div class="l1"><h3>${esc(P.g.name)}</h3><span class="amt">${money(P.bal, 0)}<span class="muted" style="font-weight:500;font-size:13px"> of ${money(P.tgt, 0)}</span></span></div>
+        <div class="bar" style="--gc:var(--savings)"><i style="width:${pct}%"></i></div>
+        <p class="sub" style="margin:0">${st.ck ? `<b style="color:var(--fg)">${money(st.amount, 0)} by ${esc(ds(st.d))}</b> (${money(P.remaining, 0)} to go, ${P.daysLeft} day${P.daysLeft === 1 ? "" : "s"}). Then ${money(P.tgt, 0)} by ${esc(ds(P.due))}.` : `<b style="color:var(--fg)">${money(P.tgt, 0)} by ${esc(ds(P.due))}</b> (${money(P.remaining, 0)} to go, ${P.daysLeft} day${P.daysLeft === 1 ? "" : "s"}).`}</p>`;
+      if (P.rate){
+        const hrsWeek = P.weekLeft / P.rate, hrsStage = P.remaining / P.rate;
+        const wkTxt = P.weekLeft <= 0.5 ? `You're <b style="color:var(--ok)">ahead of pace this week</b> (${money(P.perWeek, 0)} net a week needed).` : `dash about <b style="color:var(--warn)">${hrsWeek.toFixed(1)} more hours this week</b> to stay on pace (${money(P.perWeek, 0)} net a week).`;
+        const stTxt = P.remaining <= 0.5 ? "" : ` To hit ${money(st.amount, 0)} by ${esc(ds(st.d))}, that's about <b style="color:var(--fg)">${hrsStage.toFixed(1)} hours</b> in total, roughly ${(hrsStage / P.daysLeft).toFixed(1)} a day.`;
+        html += `<p class="sub" style="margin:0">At <b style="color:var(--fg)">${money(P.rate)}/hr</b> after gas: ${wkTxt}${stTxt}</p>`;
+      } else {
+        const gross = P.weekLeft / Math.max(0.5, 1 - P.gasShare);
+        html += `<p class="sub" style="margin:0">Aim to keep about <b style="color:var(--warn)">${money(P.weekLeft, 0)} more this week</b> after gas (${money(P.perWeek, 0)} a week needed), which is roughly ${money(gross, 0)} earned. Log ${Math.max(1, 3 - P.all.n)} more dash${3 - P.all.n === 1 ? "" : "es"} and I'll turn this into hours.</p>`;
+      }
+      if (P.behind){
+        html += `<div class="notice" role="note" style="flex-direction:column;align-items:stretch;gap:8px"><span><b>${P.late ? "Checkpoint passed" : "Behind pace"}.</b> You're about ${money(P.gap, 0)} short for ${esc(ds(st.d))}.${P.cover > 0 ? ` Want me to move ${money(P.cover, 0)} from pocket money to ${esc(P.g.name)}? Pocket money has ${money(P.pocketLeft, 0)} left.` : " Pocket money has nothing spare to cover it."}</span>${P.cover > 0 ? `<button type="button" data-dash-cover="${P.cover}">Move ${money(P.cover, 0)} from pocket money</button>` : ""}</div>`;
+      }
+      html += "</div>";
+    }
+    const recent = [...dashItems()].sort((a, b) => (b.date + (b.ts || "")).localeCompare(a.date + (a.ts || ""))).slice(0, 3);
+    if (recent.length) html += `<div style="display:flex;flex-direction:column;gap:6px">${recent.map((x) => `<div class="srcrow"><span>${esc(prettyDate(x.date, {month: "short", day: "numeric"}))} · ${Math.round(num(x.miles))} mi${num(x.hours) ? " · " + num(x.hours) + " h" : ""}</span><span style="display:inline-flex;align-items:center;gap:8px;white-space:nowrap"><span><b>${money(x.net)}</b> <span class="muted" style="font-size:12px">kept of ${money(x.earn, 0)}</span></span> <button type="button" class="iconbtn" style="width:30px;height:30px;min-height:30px" data-dash-del="${esc(x.id)}" aria-label="Delete this dash">${IC.x}</button></span></div>`).join("")}</div>`;
+    html += `<span class="meta">Gas is figured at ${c.mpg} mpg and ${money(c.gas)}/gal. <button type="button" class="linkbtn" data-dash-gas>Change</button></span></section>`;
+    return html;
+  }
+  function openDashGas(){
+    const c = dashCfg();
+    const {close, el} = sheet("Gas settings", `
+      <p class="sub" style="margin:0;font-size:14px">Gas cost for each dash = miles ÷ mpg × price per gallon. Gas only, no wear and tear. Check your Fusion's real mpg and the pump price once in a while.</p>
+      <div class="row2"><div><label class="lab" for="dmpg">Fusion mpg</label><input class="field num" id="dmpg" inputmode="decimal" value="${c.mpg}"></div>
+      <div><label class="lab" for="dgas">Gas price / gal</label><input class="field num" id="dgas" inputmode="decimal" value="${c.gas}"></div></div>
+      <button type="button" class="save" id="dgsave">Save</button>`);
+    el.querySelector("#dgsave").onclick = async () => {
+      const mpg = num(el.querySelector("#dmpg").value), gas = num(el.querySelector("#dgas").value);
+      if (mpg < 5 || mpg > 80 || gas <= 0 || gas > 12){ toast("Check those numbers: mpg should be 5 to 80, gas a price like 3.10."); return; }
+      close(); await saveDash({cfg: {mpg, gas}}); toast("Gas settings saved");
+    };
+  }
+  function openDashLog(){
+    const today = ymd(new Date()), g = ddGoal(), c = dashCfg();
+    const {close, el} = sheet("Log a dash", `
+      <div><label class="lab" for="dearn">Earned (tips included)</label><div class="amountwrap"><span>$</span><input class="amount" id="dearn" inputmode="decimal" autocomplete="off" placeholder="0.00"></div></div>
+      <div class="row2">
+        <div><label class="lab" for="dmiles">Miles driven</label><input class="field num" id="dmiles" inputmode="decimal" placeholder="0"></div>
+        <div><label class="lab" for="dhours">Hours</label><input class="field num" id="dhours" inputmode="decimal" placeholder="0.0"></div>
+      </div>
+      <div><label class="lab" for="ddate">Date</label><input class="field" id="ddate" type="date" value="${today}"></div>
+      <div class="totals" id="dprev"><div><span class="muted">Gas (${c.mpg} mpg, ${money(c.gas)}/gal)</span><b id="pgas">−$0.00</b></div><div><span class="muted">You keep</span><b id="pnet">$0.00</b></div><div><span class="muted">Per hour after gas</span><b id="prate">—</b></div></div>
+      ${g ? `<label style="display:flex;gap:12px;align-items:center;font-size:14px;min-height:44px"><input type="checkbox" id="dgoal" checked style="width:22px;height:22px;accent-color:var(--accent)"> Set aside what I keep for ${esc(g.name)}</label>` : ""}
+      <button type="button" class="save" id="dsave" disabled>Save dash</button>`);
+    const f = (i) => el.querySelector(i);
+    const sync = () => {
+      const earn = num(f("#dearn").value), gas = gasCost(f("#dmiles").value), net = round2(earn - gas), h = num(f("#dhours").value);
+      f("#pgas").textContent = "−" + money(gas); f("#pnet").textContent = money(net); f("#pnet").style.color = net < 0 ? "var(--red)" : "var(--ok)";
+      f("#prate").textContent = h > 0 ? money(net / h) + "/hr" : "—";
+      f("#dsave").disabled = !(earn > 0);
+    };
+    ["#dearn", "#dmiles", "#dhours"].forEach((i) => f(i).addEventListener("input", sync));
+    f("#dsave").onclick = async () => {
+      const btn = f("#dsave"); btn.disabled = true; btn.textContent = "Saving…";
+      const earn = round2(num(f("#dearn").value)), miles = num(f("#dmiles").value), hours = num(f("#dhours").value), date = f("#ddate").value || today;
+      const gas = gasCost(miles), net = round2(earn - gas), ts = new Date().toISOString();
+      const t = {id: uid(), date, amount: earn, type: "income", categoryId: null, incomeId: null, note: "DoorDash", ts};
+      if (!(await addTx(t))){ btn.disabled = false; btn.textContent = "Save dash"; return; }
+      let goalAdded = false;
+      const gg = f("#dgoal") && f("#dgoal").checked ? ddGoal() : null;
+      if (gg && net > 0) goalAdded = await addGoalEntry(gg, {id: uid(), date, amount: net, note: "DoorDash, kept after gas", from: t.id, ts});
+      await saveDash({items: [...dashItems(), {id: uid(), date, earn, miles, hours, gas, net, txId: t.id, ts}]});
+      close();
+      toast("Logged " + money(earn) + " · gas " + money(gas) + " · kept " + money(net));
+      if (window.__cel){ window.__cel({kind: "income", amount: net}); if (goalAdded) setTimeout(() => { const cu = S.goals.find((x) => x.id === gg.id) || gg; window.__cel({kind: "goal", name: gg.name, amount: net, target: num(cu.target), before: goalBalance(cu) - net, after: goalBalance(cu)}); }, 2100); }
+    };
+    sync();
+  }
+  async function dashDelete(id){
+    const it = dashItems().find((x) => x.id === id); if (!it) return;
+    try {
+      if (it.txId){
+        const k = it.date.slice(0, 7), list = (await loadMonth(k)).filter((t) => t.id !== it.txId);
+        S.months[k] = list; if (S.db) await S.db.doc("months/" + k).set({tx: list});
+        for (const g of S.goals){ if ((g.entries || []).some((e) => e.from === it.txId)){ const body = {...g, entries: g.entries.filter((e) => e.from !== it.txId)}; const gid = body.id; delete body.id; await saveGoal(gid, body); } }
+      }
+      await saveDash({items: dashItems().filter((x) => x.id !== id)});
+      toast("Dash deleted");
+    } catch (e){ toast("Couldn't delete that dash. Try again."); }
+  }
+  function openDashCover(amount){
+    const P = dashPlan(); if (!P) return;
+    const fun = cats().find((c) => roleOf(c) === "fun"); if (!fun){ toast("Mark a category as Pocket money in Plan first."); return; }
+    const amt = Math.min(num(amount), P.pocketLeft);
+    const {close, el} = sheet("Cover from pocket money", `
+      <p class="sub" style="margin:0;font-size:14px">This moves <b>${money(amt)}</b> out of your pocket money (${esc(fun.name)}) and sets it aside for ${esc(P.g.name)}. Pocket money drops by ${money(amt)} this month. Nothing moves until you confirm.</p>
+      <button type="button" class="save" id="cvgo">Move ${money(amt)}</button>
+      <button type="button" class="linkbtn" id="cvno">Cancel, I'll dash instead</button>`);
+    el.querySelector("#cvno").onclick = close;
+    el.querySelector("#cvgo").onclick = async () => {
+      const b = el.querySelector("#cvgo"); b.disabled = true; b.textContent = "Moving…";
+      const today = ymd(new Date()), ts = new Date().toISOString(), t = {id: uid(), date: today, amount: round2(amt), type: "expense", categoryId: fun.id, incomeId: null, note: "To " + P.g.name + " (DoorDash shortfall)", tag: "random", ts};
+      if (!(await addTx(t))){ close(); return; }
+      await addGoalEntry(P.g, {id: uid(), date: today, amount: round2(amt), note: "From pocket money", from: t.id, ts});
+      close(); toast("Moved " + money(amt) + " from pocket money to " + P.g.name);
+      if (window.__cel){ const cu = S.goals.find((x) => x.id === P.g.id) || P.g; window.__cel({kind: "goal", name: P.g.name, amount: amt, target: num(cu.target), before: goalBalance(cu) - amt, after: goalBalance(cu)}); }
+    };
+  }
+
   // ---------------- morning paper (The Fuller Dispatch) ----------------
   // Sends a short money summary (safe to spend, bills due in the next 7 days, next payday) to TJ's own Apps Script,
   // which saves it in his Google Drive for the printed morning paper. Nothing is sent until a paper link is saved in Guide.
@@ -1095,6 +1256,7 @@ window.LocalDB = (function(){
         ${dd}
       </section>
       ${plan ? pocketWeekHTML(plan) : ""}
+      ${loading ? "" : dashCardHTML()}
       ${loading ? "" : doorDashCard(m, fc, k)}
       ${fc && (fc.missing.length || fc.paysMissing.length) ? `<div class="notice soft"><span>Your forecast is missing ${esc([...fc.missing.map((x) => x + " due day"), ...fc.paysMissing.map((x) => x + " payday")].join(", "))}. Add it in Plan so Free to spend is accurate.</span><button type="button" data-go="plan">Plan</button></div>` : ""}
       <div class="stats">
@@ -1269,7 +1431,7 @@ window.LocalDB = (function(){
       const [cls, label] = goalStatus(g);
       const recent = [...(g.entries || [])].sort((a, b) => (b.date + (b.ts || "")).localeCompare(a.date + (a.ts || ""))).slice(0, 3);
       html += `<section class="goal" aria-label="${esc(g.name)}">
-        <div class="top"><div style="min-width:0"><h3>${esc(g.name || "Untitled goal")}</h3><div class="meta">${g.kind === "setaside" ? "Set-aside: add each paycheck, spend with Use money" : target > 0 ? "Target " + money(target, 0) + (g.date ? " by " + esc(prettyDate(g.date, {month: "short", year: "numeric"})) : "") : "Ongoing, no target"}</div></div>
+        <div class="top"><div style="min-width:0"><h3>${esc(g.name || "Untitled goal")}</h3><div class="meta">${g.kind === "setaside" ? "Set-aside: add each paycheck, spend with Use money" : target > 0 ? "Target " + money(target, 0) + (g.due ? " by " + esc(prettyDate(g.due, {month: "short", day: "numeric"})) : g.date ? " by " + esc(prettyDate(g.date, {month: "short", year: "numeric"})) : "") : "Ongoing, no target"}</div></div>
           <button type="button" class="iconbtn" data-goal-edit="${esc(g.id)}" aria-label="Edit ${esc(g.name)}">${IC.edit}</button></div>
         <div class="bal">${money(bal)} ${target > 0 ? `<small>of ${money(target, 0)}</small>` : g.kind === "setaside" ? "<small>available</small>" : ""}</div>
         ${target > 0 ? `<div class="bar" style="--gc:var(--savings)"><i style="width:${pct}%"></i></div>` : ""}
@@ -2002,6 +2164,14 @@ window.LocalDB = (function(){
         <div><label class="lab" for="gtarget">Total cost</label><input class="field num" id="gtarget" inputmode="decimal" value="${num(d.target) || ""}" placeholder="$0 = no target"></div>
         <div><label class="lab" for="gdate2">Want it by</label><input class="field" id="gdate2" type="month" value="${esc((d.date || "").slice(0, 7))}"></div>
       </div>
+      <div id="gexact"><div class="row2">
+        <div><label class="lab" for="gdue">Exact date (optional)</label><input class="field" id="gdue" type="date" value="${esc(d.due || "")}"></div>
+        <div><label class="lab" for="gckd">Checkpoint date</label><input class="field" id="gckd" type="date" value="${esc((d.check && d.check.date) || "")}"></div>
+      </div>
+      <div class="row2" style="margin-top:10px">
+        <div><label class="lab" for="gcka">Checkpoint total</label><input class="field num" id="gcka" inputmode="decimal" value="${(d.check && num(d.check.amount)) || ""}" placeholder="$0"></div>
+        <label style="display:flex;gap:10px;align-items:center;font-size:14px;min-height:44px;align-self:end"><input type="checkbox" id="gdd" ${d.dd ? "checked" : ""} style="width:22px;height:22px;accent-color:var(--accent)"> DoorDash funds this</label>
+      </div></div>
       <div><label class="lab" for="gmonthly">Save each month</label><input class="field num" id="gmonthly" inputmode="decimal" value="${num(d.monthly) || ""}" placeholder="$0"></div>
       <div class="notice soft" id="gsugg" hidden><span id="gsuggText"></span><button type="button" id="gsuggUse">Use this</button></div>
       <button type="button" class="save" id="gsave2">${isNew ? "Create goal" : "Save changes"}</button>
@@ -2009,7 +2179,7 @@ window.LocalDB = (function(){
     const f = (id) => el.querySelector(id);
     const syncKind = () => {
       el.querySelectorAll("[data-gkind]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.gkind === kind));
-      f("#gtargetRow").hidden = kind === "setaside";
+      f("#gtargetRow").hidden = kind === "setaside"; f("#gexact").hidden = kind === "setaside";
       f("#gkindHint").textContent = kind === "setaside" ? "For regular stuff you buy now and then (personal care, haircuts, car maintenance). Add money each paycheck, spend it with Use money. Unspent money stays and builds up." : "For one thing you're saving toward, with a total and a date.";
       f("#gname").placeholder = kind === "setaside" ? "e.g. Personal care" : "e.g. New laptop";
       suggest();
@@ -2030,7 +2200,7 @@ window.LocalDB = (function(){
     syncKind();
     f("#gsave2").onclick = async () => {
       const sa = kind === "setaside";
-      const body = {...(g || {}), kind, name: f("#gname").value.trim() || (sa ? "Untitled set-aside" : "Untitled goal"), target: sa ? 0 : round2(num(f("#gtarget").value)), date: sa ? "" : f("#gdate2").value, monthly: round2(num(f("#gmonthly").value)), example: false, entries: g ? (g.entries || []) : [], created: g ? g.created : new Date().toISOString()};
+      const body = {...(g || {}), kind, name: f("#gname").value.trim() || (sa ? "Untitled set-aside" : "Untitled goal"), target: sa ? 0 : round2(num(f("#gtarget").value)), date: sa ? "" : (f("#gdue").value ? f("#gdue").value.slice(0, 7) : f("#gdate2").value), due: sa ? "" : f("#gdue").value, dd: !sa && f("#gdd").checked, check: !sa && num(f("#gcka").value) > 0 && f("#gckd").value ? {amount: round2(num(f("#gcka").value)), date: f("#gckd").value} : null, monthly: round2(num(f("#gmonthly").value)), example: false, entries: g ? (g.entries || []) : [], created: g ? g.created : new Date().toISOString()};
       const id = g ? g.id : uid();
       delete body.id;
       if (await saveGoal(id, body)){ close(); toast(isNew ? (sa ? "Set-aside created" : "Goal created") : "Saved"); }
@@ -2175,6 +2345,10 @@ window.LocalDB = (function(){
       try { localStorage.setItem("fd_paper", v); } catch (e){ toast("Couldn't save the link on this phone."); return; }
       paperSig = ""; paperSend(true); render(); return;
     }
+    if ((el = t("[data-dash-log]"))){ openDashLog(); return; }
+    if ((el = t("[data-dash-gas]"))){ openDashGas(); return; }
+    if ((el = t("[data-dash-del]"))){ dashDelete(el.dataset.dashDel); return; }
+    if ((el = t("[data-dash-cover]"))){ openDashCover(el.dataset.dashCover); return; }
     if ((el = t("[data-paper-send]"))){ paperSig = ""; paperSend(true); return; }
     if ((el = t("[data-paper-x]"))){ try { localStorage.removeItem("fd_paper"); localStorage.removeItem("fd_paper_at"); } catch (e){} toast("Morning paper unlinked"); render(); return; }
     if ((el = t("[data-restore]"))){ pickRestore(); return; }
@@ -2270,6 +2444,10 @@ window.LocalDB = (function(){
     }, () => {});
     db.doc("config/accounts").onSnapshot((snap) => {
       S.accounts = snap.exists ? JSON.parse(JSON.stringify(snap.data())) : null;
+      if (S.tab !== "plan") render();
+    }, () => {});
+    db.doc("config/dashlog").onSnapshot((snap) => {
+      S.dash = snap.exists ? {items: [], ...JSON.parse(JSON.stringify(snap.data()))} : {items: []};
       if (S.tab !== "plan") render();
     }, () => {});
     db.doc("config/guide").onSnapshot((snap) => {
