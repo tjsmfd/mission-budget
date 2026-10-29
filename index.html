@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Rosewood</title>
 <script>try{var _t=localStorage.getItem("mb-theme");document.documentElement.setAttribute("data-theme",_t==="classic"||_t==="pro"?_t:"sl")}catch(e){document.documentElement.setAttribute("data-theme","sl")}</script>
-<meta name="mb-build" content="1793241315">
+<meta name="mb-build" content="1793259075">
 <script>
 /* Auto-update: on open and on return to the app, check GitHub for a newer build and reload into it.
    Skips while a sheet is open so it never interrupts you mid-entry. */
-(function(){var B="1793241315";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
+(function(){var B="1793259075";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
 function chk(){fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){var m=t.match(/name="mb-build" content="(\d+)"/);if(!m||m[1]===B||Number(m[1])<Number(B))return;if(busy())return;try{if(sessionStorage.getItem("mb_rl")===m[1])return;sessionStorage.setItem("mb_rl",m[1])}catch(e){}location.replace(location.pathname+"?v="+m[1])}).catch(function(){})}
 window.addEventListener("load",function(){setTimeout(chk,1500)});document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();
 </script>
@@ -502,12 +502,22 @@ window.LocalDB = (function(){
       await tx("readwrite", (st) => { st.clear(); for (const [k, v] of Object.entries(docs)) st.put(clone(v), k); });
     },
     async snapList(){ return (await getRaw("meta/snaps")) || []; },
+    async weeklyList(){ return (await getRaw("meta/weekly")) || []; },
+    // One automatic copy a week, kept for 8 weeks, separate from the update copies so frequent updates never push them out.
+    async weeklySnapshot(){
+      const docs = await api.exportAll(); if (!Object.keys(docs).length) return false;
+      const list = (await getRaw("meta/weekly")) || [];
+      if (list[0] && Date.now() - new Date(list[0].at).getTime() < 6.5 * 864e5) return false;
+      list.unshift({at: new Date().toISOString(), label: "Weekly copy", body: JSON.stringify(docs)});
+      await tx("readwrite", (st) => st.put(list.slice(0, 8), "meta/weekly"));
+      return true;
+    },
     async snapshot(label){
       const docs = await api.exportAll(); if (!Object.keys(docs).length) return false;
       const list = (await getRaw("meta/snaps")) || [], body = JSON.stringify(docs);
       if (list[0] && list[0].body === body) return false;
       list.unshift({at: new Date().toISOString(), label, body});
-      await tx("readwrite", (st) => st.put(list.slice(0, 3), "meta/snaps"));
+      await tx("readwrite", (st) => st.put(list.slice(0, 5), "meta/snaps"));
       return true;
     },
     async isEmpty(){ return !(await allEntries()).some(([k]) => !k.startsWith("meta/")); },
@@ -1818,6 +1828,7 @@ window.LocalDB = (function(){
         <p>To move to a new phone, or after reinstalling, tap Restore and pick your newest backup file.</p>
         <p class="hint">Last backup: ${S.lastBackup ? esc(new Date(S.lastBackup).toLocaleString("en-US", {month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit"})) : "never"}</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="pillbtn" data-backup>Back up now</button><button type="button" class="pillbtn ghost" data-restore>Restore from file</button></div>
+        ${(S.weekly || []).length ? `<p class="hint" style="margin:10px 0 4px"><b>Weekly automatic copies.</b> Saved by the app once a week and kept for 8 weeks, even across updates. They live inside the app, so still save a file now and then.</p>${S.weekly.map((x, i) => `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0"><span class="hint" style="margin:0">${esc(new Date(x.at).toLocaleString("en-US", {month: "short", day: "numeric", hour: "numeric", minute: "2-digit"}))}</span><span style="display:flex;gap:6px"><button type="button" class="pillbtn ghost" data-weekly-save="${i}">Save file</button><button type="button" class="pillbtn ghost" data-weekly="${i}">Restore</button></span></div>`).join("")}` : ""}
         ${(S.snaps || []).length ? `<p class="hint" style="margin:10px 0 4px"><b>Automatic safety copies.</b> The app keeps its own copy of your data when an update arrives or before a restore. These are inside the app, so still save a file backup too.</p>${S.snaps.map((x, i) => `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0"><span class="hint" style="margin:0">${esc(new Date(x.at).toLocaleString("en-US", {month: "short", day: "numeric", hour: "numeric", minute: "2-digit"}))} · ${esc(x.label)}</span><button type="button" class="pillbtn ghost" data-snap="${i}">Restore</button></div>`).join("")}` : ""}
       </div></details>
       <details class="gd"><summary>Morning paper</summary><div class="gbody">${paperGuideHTML()}</div></details>
@@ -2353,6 +2364,21 @@ window.LocalDB = (function(){
     if ((el = t("[data-paper-send]"))){ paperSig = ""; paperSend(true); return; }
     if ((el = t("[data-paper-x]"))){ try { localStorage.removeItem("fd_paper"); localStorage.removeItem("fd_paper_at"); } catch (e){} toast("Morning paper unlinked"); render(); return; }
     if ((el = t("[data-restore]"))){ pickRestore(); return; }
+    if ((el = t("[data-weekly]"))){
+      const x = (S.weekly || [])[Number(el.dataset.weekly)]; if (!x) return;
+      if (!confirm("Replace everything in the app with the weekly copy from " + new Date(x.at).toLocaleString("en-US", {month: "short", day: "numeric", hour: "numeric", minute: "2-digit"}) + "? Your current data is saved as a safety copy first.")) return;
+      (async () => { try { await S.db.snapshot("Before using a weekly copy"); await S.db.importAll(JSON.parse(x.body)); location.reload(); } catch (e){ toast("Restore failed: " + ((e && e.name) || "unknown")); } })();
+      return;
+    }
+    if ((el = t("[data-weekly-save]"))){
+      const x = (S.weekly || [])[Number(el.dataset.weeklySave)]; if (!x) return;
+      (async () => {
+        const name = "mission-budget-backup-" + x.at.slice(0, 10) + ".json", body = JSON.stringify({app: "mission-budget", version: 1, exportedAt: x.at, docs: JSON.parse(x.body)}, null, 1), file = new File([body], name, {type: "application/json"});
+        try { if (navigator.canShare && navigator.canShare({files: [file]})){ await navigator.share({files: [file], title: name}); return; } } catch (e){ if (e && e.name === "AbortError") return; }
+        const url = URL.createObjectURL(file), a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000);
+      })();
+      return;
+    }
     if ((el = t("[data-snap]"))){
       const x = (S.snaps || [])[Number(el.dataset.snap)]; if (!x) return;
       if (!confirm("Replace everything in the app with this safety copy from " + new Date(x.at).toLocaleString("en-US", {month: "short", day: "numeric", hour: "numeric", minute: "2-digit"}) + "?")) return;
@@ -2419,10 +2445,12 @@ window.LocalDB = (function(){
         const b = (document.querySelector('meta[name="mb-build"]') || {}).content || "";
         if (!S.empty && b && (await db.getMeta("build")) !== b){ await db.snapshot("When an update arrived"); }
         if (b) await db.setMeta("build", b);
-        S.snaps = await db.snapList();
+        await db.weeklySnapshot();
+        S.snaps = await db.snapList(); S.weekly = await db.weeklyList();
       } catch (e){} try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e){} }
     if (!db){ S.status = "offline"; S.plan = starterPlan(); S.goalsLoaded = true; S.months[monthKey(new Date())] = []; render(); return; }
     S.db = db;
+    document.addEventListener("visibilitychange", async () => { if (document.hidden) return; try { if (!S.empty && await db.weeklySnapshot()){ S.weekly = await db.weeklyList(); if (S.tab === "guide") render(); } } catch (e){} });
     const _doc = db.doc.bind(db);
     db.doc = (p) => { const d = _doc(p), set = d.set; d.set = async (b) => { await set(b); if (S.empty){ S.empty = false; } }; return d; };
     db.doc("config/plan").onSnapshot((snap) => {
