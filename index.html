@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Rosewood</title>
 <script>try{var _t=localStorage.getItem("mb-theme");document.documentElement.setAttribute("data-theme",_t==="classic"||_t==="pro"?_t:"sl")}catch(e){document.documentElement.setAttribute("data-theme","sl")}</script>
-<meta name="mb-build" content="1793232978">
+<meta name="mb-build" content="1793234680">
 <script>
 /* Auto-update: on open and on return to the app, check GitHub for a newer build and reload into it.
    Skips while a sheet is open so it never interrupts you mid-entry. */
-(function(){var B="1793232978";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
+(function(){var B="1793234680";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
 function chk(){fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){var m=t.match(/name="mb-build" content="(\d+)"/);if(!m||m[1]===B||Number(m[1])<Number(B))return;if(busy())return;try{if(sessionStorage.getItem("mb_rl")===m[1])return;sessionStorage.setItem("mb_rl",m[1])}catch(e){}location.replace(location.pathname+"?v="+m[1])}).catch(function(){})}
 window.addEventListener("load",function(){setTimeout(chk,1500)});document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();
 </script>
@@ -353,9 +353,9 @@ html[data-theme="sl"] .tab[aria-current="page"]::after{content:"";position:absol
 
 /* ===== Launch animation + celebrations (not used in Classic) ===== */
 #splash{position:fixed;inset:0;z-index:100;display:grid;place-items:center;pointer-events:auto;color:#D9B77A}
-#splash .halves i{position:absolute;left:0;right:0;height:50%;background:#160810;background-image:radial-gradient(460px 360px at 100% 0,rgba(160,34,70,.4),transparent 70%)}
-#splash .halves i:first-child{top:0;animation:wipeT .9s cubic-bezier(.7,0,.2,1) 1.9s both}
-#splash .halves i:last-child{bottom:0;animation:wipeB .9s cubic-bezier(.7,0,.2,1) 1.9s both}
+#splash .halves i{position:absolute;left:0;right:0;height:50.2%;background-color:#160810;background-image:radial-gradient(460px 360px at 100% 0,rgba(160,34,70,.4),transparent 70%);background-repeat:no-repeat;background-size:100% 200%}
+#splash .halves i:first-child{top:0;background-position:0 0;animation:wipeT .9s cubic-bezier(.7,0,.2,1) 1.9s both}
+#splash .halves i:last-child{bottom:0;background-position:0 100%;animation:wipeB .9s cubic-bezier(.7,0,.2,1) 1.9s both}
 #splash .in{position:relative;display:flex;flex-direction:column;align-items:center;gap:16px;animation:sFade .4s ease both,sOut .4s ease 1.7s forwards}
 #splash .rz{width:92px;height:92px;background:currentColor;-webkit-mask:var(--rose) center/contain no-repeat;mask:var(--rose) center/contain no-repeat;animation:sGrow 1.3s cubic-bezier(.5,0,.2,1) .2s both}
 #splash .nm{font-family:'Fraunces',Georgia,serif;font-size:26px;color:#F4E7CF;letter-spacing:.06em}
