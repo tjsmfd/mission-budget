@@ -18,7 +18,7 @@ Updates are pushed here by Claude. The app checks GitHub every time you open it 
 - Goals can have an exact date, a first checkpoint, and be marked "DoorDash funds this".
 - Log a dash (earned, miles, hours) on Today. Gas is miles / mpg x price (Fusion mpg and gas price are editable). The net after gas counts toward the goal, and the card says how much to earn or how many hours to dash. If you fall behind, it offers to move the gap from pocket money, only with your OK.
 
-Last updated: Oct 28, 2026 · 8:44 PM ET.
+Last updated: Oct 28, 2026 · 10:35 PM ET.
 
 If an update doesn't show: give GitHub about a minute, then fully close and reopen the app once.
 
