@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Rosewood</title>
 <script>try{var _t=localStorage.getItem("mb-theme");document.documentElement.setAttribute("data-theme",_t==="classic"||_t==="pro"?_t:"sl")}catch(e){document.documentElement.setAttribute("data-theme","sl")}</script>
-<meta name="mb-build" content="1793259075">
+<meta name="mb-build" content="1793380089">
 <script>
 /* Auto-update: on open and on return to the app, check GitHub for a newer build and reload into it.
    Skips while a sheet is open so it never interrupts you mid-entry. */
-(function(){var B="1793259075";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
+(function(){var B="1793380089";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
 function chk(){fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){var m=t.match(/name="mb-build" content="(\d+)"/);if(!m||m[1]===B||Number(m[1])<Number(B))return;if(busy())return;try{if(sessionStorage.getItem("mb_rl")===m[1])return;sessionStorage.setItem("mb_rl",m[1])}catch(e){}location.replace(location.pathname+"?v="+m[1])}).catch(function(){})}
 window.addEventListener("load",function(){setTimeout(chk,1500)});document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();
 </script>
@@ -337,6 +337,8 @@ html[data-theme="sl"] h2{font-family:var(--serif);font-weight:400;font-size:19px
 html[data-theme="sl"] :is(.big,.n2,.stat .v,.goal .bal,.sumtop .big){font-family:var(--serif);font-weight:300;letter-spacing:-.03em}
 html[data-theme="sl"] .big{font-size:60px;background:none;color:#FBEFD8;-webkit-text-fill-color:#FBEFD8}
 html[data-theme="sl"] .big.neg{-webkit-text-fill-color:var(--red);color:var(--red)}
+html[data-theme="sl"] .big.pace{-webkit-text-fill-color:var(--accent);color:var(--accent)}
+html[data-theme="sl"] .big.amb{-webkit-text-fill-color:var(--warn);color:var(--warn)}
 html[data-theme="sl"] .n2{font-size:34px}
 html[data-theme="sl"] .stat .v{font-size:24px}
 html[data-theme="sl"] .bar>i.warn{background:linear-gradient(90deg,#B3862E,var(--warn));box-shadow:0 0 14px rgba(242,184,75,.38)}
@@ -389,6 +391,32 @@ html[data-theme="sl"] .tab[aria-current="page"]::after{content:"";position:absol
 .verdict{border-radius:16px;padding:12px 14px;font-size:14px;line-height:1.45}
 .verdict b{display:block;margin-bottom:2px}
 .verdict.ok{background:var(--ok-tint)}.verdict.mid{background:var(--warn-tint)}.verdict.bad{background:var(--red-tint)}
+/* ===== Cash plan: bills line + three separate warning levels ===== */
+.hero .big.pace{color:var(--accent)}.hero .big.amb{color:var(--warn)}
+.mbill{display:flex;gap:10px;align-items:flex-start;padding:11px 13px;border-radius:14px;font-size:14px;line-height:1.4;background:var(--ok-tint)}
+.mbill.bad{background:var(--red-tint)}
+.mbill b{display:block}
+.mbill .bic{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:12px;background:var(--ok);color:#10261A}
+.mbill.bad .bic{background:var(--red);color:#2A0C09}
+.mstat{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:14px;font-size:14px;line-height:1.45;border:1px solid transparent}
+.mstat b{display:block;margin-bottom:2px}
+.mstat .ic{flex:none;width:22px;height:22px;display:grid;place-items:center;font-weight:800;font-size:13px;margin-top:1px}
+.mstat.lv0{background:var(--card2)}
+.mstat.lv0 .ic{border-radius:50%;background:var(--ok);color:#10261A}
+.mstat.stale{background:var(--card2)}
+.mstat.stale .ic{border-radius:50%;background:var(--muted);color:var(--bg)}
+/* 1: over your pace (soft, champagne, round "i"): you can still spend */
+.mstat.lv1{background:rgba(217,183,122,.10);border-color:rgba(217,183,122,.40)}
+.mstat.lv1 b{color:var(--accent)}
+.mstat.lv1 .ic{border-radius:50%;background:var(--accent);color:#2A1704}
+/* 2: pocket money used up (amber, square "!", thick left edge): hold off until payday */
+.mstat.lv2{background:var(--warn-tint);border-left:4px solid var(--warn);border-radius:6px 14px 14px 6px}
+.mstat.lv2 b{color:var(--warn)}
+.mstat.lv2 .ic{border-radius:6px;background:var(--warn);color:#2A1D04}
+/* 3: a bill is at risk (red, solid, "x"): add money */
+.mstat.lv3{background:rgba(240,103,91,.18);border:1.5px solid var(--red)}
+.mstat.lv3 b{color:var(--red)}
+.mstat.lv3 .ic{border-radius:6px;background:var(--red);color:#2A0C09}
 .pweeks>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;min-height:44px;-webkit-tap-highlight-color:transparent}
 .pweeks>summary::-webkit-details-marker{display:none}
 .pweeks>summary::after{content:"";flex:none;width:9px;height:9px;margin-right:4px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg) translateY(-2px);transition:transform .18s}
@@ -860,12 +888,13 @@ window.LocalDB = (function(){
     return "";
   }
 
-  function ringSVG(p){
+  function ringSVG(p, calm){
     const C = 2 * Math.PI * 34, used = Math.max(0, Math.min(1, p));
-    const color = p >= 0.9 ? "var(--red)" : p >= 0.7 ? "var(--warn)" : "var(--accent)";
+    const pc = calm ? Math.min(p, 0.69) : p; // calm: red is reserved for 'a bill is at risk'
+    const color = pc >= 0.9 ? "var(--red)" : pc >= 0.7 ? "var(--warn)" : "var(--accent)";
     const pro = isPro();
-    const g1 = p >= 0.9 ? "#D4493D" : p >= 0.7 ? "#C9A23A" : "var(--rg1,#FFCB9B)", g2 = p >= 0.9 ? "var(--red)" : p >= 0.7 ? "var(--warn)" : "var(--rg2,#EA7C93)";
-    const glow = p >= 0.9 ? "rgba(255,107,94,.45)" : p >= 0.7 ? "rgba(245,196,81,.45)" : "";
+    const g1 = pc >= 0.9 ? "#D4493D" : pc >= 0.7 ? "#C9A23A" : "var(--rg1,#FFCB9B)", g2 = pc >= 0.9 ? "var(--red)" : pc >= 0.7 ? "var(--warn)" : "var(--rg2,#EA7C93)";
+    const glow = pc >= 0.9 ? "rgba(255,107,94,.45)" : pc >= 0.7 ? "rgba(245,196,81,.45)" : "";
     return `<svg class="ring" role="img" aria-label="${Math.round(p * 100)}% of monthly spending used" width="84" height="84" viewBox="0 0 84 84">
       <defs><linearGradient id="ringG${Math.round(p*100)}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:${g1}"/><stop offset="1" style="stop-color:${g2}"/></linearGradient></defs>
       <circle cx="42" cy="42" r="34" fill="none" stroke="var(--track)" stroke-width="9"/>
@@ -918,7 +947,7 @@ window.LocalDB = (function(){
       const done = sp >= b * 0.97 || (S.billSkip[k] || []).includes(c.id);
       if (!dd){ if (!done){ ev.push({d: from, label: c.name, note: "no due day set, counted now", amt: -(b - sp), kind: 0}); missing.push(c.name); } continue; }
       if (!done){ let due = dueIn(from.getFullYear(), from.getMonth(), dd); if (due < from) due = from; if (inWin(due)) ev.push({d: due, label: c.name, amt: -(b - sp), kind: 0}); }
-      for (let mo = 1; mo <= 2; mo++){ const due = dueIn(from.getFullYear(), from.getMonth() + mo, dd); if (inWin(due)) ev.push({d: due, label: c.name, amt: -b, kind: 0}); }
+      for (let mo = 1; mo <= 2; mo++){ const due = dueIn(from.getFullYear(), from.getMonth() + mo, dd); if (inWin(due) && !(S.billSkip[monthKey(due)] || []).includes(c.id)) ev.push({d: due, label: c.name, amt: -b, kind: 0}); }
     }
     return {ev, missing};
   }
@@ -1146,11 +1175,64 @@ window.LocalDB = (function(){
   }
   // ---------------- pocket money by week ----------------
   // "Safe now" protects bills (forecast). "This week" is a pace: what is left of pocket money split over the days left, weeks run Sunday to Saturday.
-  function safeNow(m){
+  // ---- Cash plan: bills first, then ONE pocket money number that grows a little every day (your pace). ----
+  const todayStart = () => { const t = new Date(); t.setHours(0, 0, 0, 0); return t; };
+  const dfmt = (d) => d.toLocaleString("en-US", {month: "short", day: "numeric"});
+  function freshFc(){
     const acc = S.accounts, loading = S.status === "loading";
     const fresh = acc && acc.checking != null && acc.asOf && (Date.now() - new Date(acc.asOf).getTime()) < 7 * 864e5;
-    const fc = fresh && !loading ? forecast() : null;
-    return fc ? Math.max(0, Math.min(m.funLeft, fc.spendable)) : m.funLeft;
+    return fresh && !loading ? forecast() : null;
+  }
+  // H = what your pace allows so far this month, minus what you've spent. cash = what your checking can spare without touching bills.
+  function pocketNow(m, fc){
+    if (!(m.funBudget > 0)) return null;
+    const now = new Date(), dim = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate(), day = now.getDate();
+    const base = Math.max(0, m.funBudget - m.pocketExtra), r = base / dim;
+    const H = round2(r * day + m.pocketExtra - m.funCover - m.funSpent);
+    const cash = fc ? round2(fc.spendable) : null;
+    const avail = cash === null ? H : Math.min(H, cash);
+    return {r, W: r * 7, H, cash, avail, base, dim, day};
+  }
+  const safeNow = (m) => { const pn = pocketNow(m, freshFc()); return pn ? Math.max(0, pn.avail) : m.funLeft; };
+  const nextPayD = (fc) => { const e = fc && fc.ev.find((x) => x.kind === 1); return e ? e.d : null; };
+  // Date when a purchase of `amt` fits the pace again (and the bills check), or null if it fits now.
+  function fitDate(pn, fc, amt){
+    const t = todayStart(); let days = 0;
+    const needH = amt - pn.H; if (needH > 0.004) days = pn.r > 0 ? Math.ceil(needH / pn.r) : 365;
+    let d = addDays(t, days);
+    if (fc && amt > fc.spendable + 0.004){ const np = nextPayD(fc); if (np && np > d) d = np; }
+    return d > t ? d : null;
+  }
+  function moneyStatus(m, fc, pn){
+    const t = todayStart();
+    if (!fc) return {lvl: "stale", title: "Update your balance", text: "Enter your checking balance (Accounts below) so your bills and paydays are counted.", bills: null};
+    const bills = fc.ev.filter((e) => e.kind === 0).sort((a, b) => a.d - b.d), np = nextPayD(fc);
+    const upto = np || addDays(t, 30), before = bills.filter((e) => e.d <= upto);
+    const need = round2(before.reduce((a, e) => a - e.amt, 0)), chk = fc.live.checking;
+    const nb = bills[0], nbTxt = nb ? `Next bill: ${esc(nb.label)} ${money(-nb.amt)} on ${dfmt(nb.d)}` : "No bills in the next 30 days";
+    let short = 0, by = null;
+    if (need > chk + 0.004){ short = round2(need - chk); by = before[0].d; }
+    else if (fc.low < -0.004){ short = round2(-fc.low); by = fc.lowD; }
+    if (short > 0) return {lvl: 3, title: "Action needed: add money to checking", text: `Checking will be short <strong>${money(short)}</strong> by ${dfmt(by)}. Move ${money(short)} in before then so your bills clear.`, bills: {ok: false, head: "Bills at risk", sub: nbTxt}};
+    const bills_ok = {ok: true, head: "Bills covered", sub: `Through ${dfmt(addDays(t, 30))}. ${nbTxt}`};
+    if (fc.spendable <= 0.004) return {lvl: 2, title: "Careful: pocket money is used up", text: `Your bills are still covered. Checking dips to ${money(fc.low)} on ${dfmt(fc.lowD)}, close to your ${money(fc.cushion, 0)} cushion, so hold off on pocket spending${np ? ` until payday (${dfmt(np)})` : ""}.`, bills: bills_ok};
+    if (pn && pn.H < -0.5){ const d = fitDate(pn, fc, 0.01); return {lvl: 1, title: "Heads-up: over your pace", text: `You're <strong>${money(-pn.H)}</strong> over your pace. You can still spend, and your bills are fine. You're back on pace <strong>${dfmt(d)}</strong>.`, bills: bills_ok}; }
+    return {lvl: 0, title: "On pace", text: pn ? `You can spend up to <strong>${money(pn.avail)}</strong> now and stay on pace.` : "", bills: bills_ok};
+  }
+  function pocketVerdict2(pn, fc, a){
+    if (!(a > 0)) return null;
+    if (fc && a > fc.spendable + 0.004){ const np = nextPayD(fc); return {t: "bad", h: "Bills would be at risk", p: `${money(a)} would take checking below your ${money(fc.cushion, 0)} cushion around ${dfmt(fc.lowD)}.${fc.spendable > 0 ? ` Spend up to ${money(fc.spendable)} or` : ""} Wait${np ? " until payday (" + dfmt(np) + ")" : " for your next paycheck"}.`}; }
+    if (a <= pn.H + 0.004) return {t: "ok", h: "Fits your pace", p: `You would still have ${money(pn.avail - a)} to spend and your bills stay covered.`};
+    const d = fitDate(pn, fc, a);
+    return {t: "mid", h: "Safe for bills, over your pace", p: `It puts you ${money(a - pn.H)} over your pace. Your bills stay covered. You're back on pace ${d ? "<strong>" + dfmt(d) + "</strong>" : "now"}.`};
+  }
+  function pocketCheckHTML(pn, fc){
+    const v = S.pkVerdict ? pocketVerdict2(pn, fc, S.pkVerdict) : null;
+    return `<section class="card pchk" aria-label="Can I afford it?"><span class="l2">Can I afford it?</span><span class="sub">Type a price and tap Check. If it's too much right now, you'll get the date it fits.</span>
+        <input class="field num" id="pkQ" inputmode="decimal" autocomplete="off" enterkeyhint="done" placeholder="$0.00" aria-label="Price of purchase" value="${esc(S.pkDraft || "")}">
+        ${v ? `<div class="verdict ${v.t}" role="status"><b>${esc(v.h)}</b>${v.p}</div>` : ""}
+        <div class="qa"><button type="button" class="pillbtn" id="pkCheck">Check</button>${v && v.t !== "bad" ? '<button type="button" class="pillbtn ghost" id="pkLog">Log it</button>' : ""}</div>
+      </section>`;
   }
   function pocketPlan(m, spendNow){
     if (!(m.funBudget > 0)) return null;
@@ -1229,44 +1311,40 @@ window.LocalDB = (function(){
     const fresh = acc && acc.checking != null && acc.asOf && (Date.now() - new Date(acc.asOf).getTime()) < 7 * 864e5;
     const fc = fresh && !loading ? forecast() : null;
     const cover = fc ? fc.spendable : null;
-    let check = "";
-    const spendNow = cover === null ? m.funLeft : Math.max(0, Math.min(m.funLeft, cover));
-    const plan = loading ? null : pocketPlan(m, spendNow);
-    const dshort = (d) => d.toLocaleString("en-US", {month: "short", day: "numeric"});
-    if (!loading && m.funBudget > 0){
-      if (!fc) check = `<span class="sub">Update your checking balance (Accounts below) so this number accounts for your bills and paydays.</span>`;
-      else if (cover >= m.funLeft) check = `<span class="sub" style="color:var(--ok)">Your bills, gas, and goal transfers for the next 30 days are covered with your ${money(fc.cushion, 0)} cushion. Your whole pocket money budget is safe to spend.</span>`;
-      else if (cover > 0) check = `<span class="sub">Spend up to this today and your balance still stays above your ${money(fc.cushion, 0)} cushion at its lowest point (${dshort(fc.lowD)}). <span style="color:var(--warn)">${money(m.funLeft - spendNow)} more opens up as paychecks land.</span></span>`;
-      else check = `<span class="sub" style="color:var(--red)">Your balance is projected to dip to ${money(fc.low)} on ${dshort(fc.lowD)} before your next paycheck, below your ${money(fc.cushion, 0)} cushion. Pocket money opens up after payday.</span>`;
-    }
+    const pn = loading ? null : pocketNow(m, fc);
+    const st = loading ? null : moneyStatus(m, fc, pn);
+    const dshort = dfmt;
     let dd = "";
     if (!loading && (m.funBudget > 0 || m.overs.length)){
-      let tone = "muted", label = m.funBudget > 0 ? "Update balance" : "Heads-up";
-      if (m.funBudget > 0 && fc){
-        if (cover >= m.funLeft){ tone = "ok"; label = "Covered for 30d"; }
-        else if (cover > 0){ tone = "warn"; label = "More after payday"; }
-        else { tone = "red"; label = "Dips low " + dshort(fc.lowD); }
-      }
       const chip = m.overs.length ? `<span class="schip">${m.overs.length} over budget</span>` : "";
       const overBox = m.overs.length ? `<div class="overflag" role="note"><b>Over budget this month${m.coverOver ? " · taken from pocket money" : ""}</b>${m.overs.map((o) => `<span class="orow"><span>${esc(o.name)}</span><span>+${money(o.amount)}</span></span>`).join("")}<span class="ofoot">${m.coverOver ? `Pocket money is ${money(m.overTotal)} lower so your plan stays balanced.` : `Not taken from pocket money (turned off in Plan). Keep ${money(m.overTotal)} in mind.`}</span></div>` : "";
       const food = m.funBudget > 0 ? `<span class="sub">So far this month: ate out ${m.foodN}× (${money(m.foodSpent)}) · random ${money(Math.max(0, m.funSpent - m.foodSpent))}</span>` : "";
-      dd = `<details class="dd" data-dd ${S.ddOpen ? "open" : ""}><summary><span class="sdot" style="--c:var(--${tone})"></span><span class="stxt">${label}</span>${chip}</summary><div class="ddbody">${check}${overBox}${food}</div></details>`;
+      dd = `<details class="dd" data-dd ${S.ddOpen ? "open" : ""}><summary><span class="stxt">Details</span>${chip}</summary><div class="ddbody">${overBox}${food}</div></details>`;
     }
+    const ICON = {0: "✓", 1: "i", 2: "!", 3: "✕", stale: "↻"};
+    const banner = st ? `${st.bills ? `<div class="mbill ${st.bills.ok ? "ok" : "bad"}" role="status"><span class="bic">${st.bills.ok ? "✓" : "✕"}</span><span><b>${esc(st.bills.head)}</b><span class="sub" style="display:block">${st.bills.sub}</span></span></div>` : ""}<div class="mstat lv${st.lvl}" role="status"><span class="ic" aria-hidden="true">${ICON[st.lvl]}</span><span><b>${esc(st.title)}</b>${st.text}</span></div>` : "";
+    const heroBig = loading ? "—" : !pn ? "—" : money(pn.avail);
+    let heroSub = "";
+    if (loading) heroSub = "Loading your budget…";
+    else if (!pn) heroSub = "Mark a category as Pocket money in Plan";
+    else if (pn.H < 0) heroSub = `Over your pace by ${money(-pn.H)} · back on pace ${dfmt(fitDate(pn, fc, 0.01) || todayStart())}`;
+    else heroSub = `Pace ${money(pn.W, 0)}/week · grows ${money(pn.r)}/day` + (pn.cash !== null && pn.cash < pn.H - 0.5 ? ` · ${money(pn.H - pn.cash)} held back for bills` : "");
     let html = `
       <div class="headrow"><div class="head"><span class="date">${esc(now.toLocaleString("en-US", {weekday: "long", month: "short", day: "numeric"}))}</span><h1>${greeting()}</h1></div>${helpBtn()}</div>
       ${loading ? "" : notices() + lastLoggedNotice(m)}
       <section class="card" aria-label="Free to spend" style="display:flex;flex-direction:column;gap:12px">
         <div class="hero">
-          ${ringSVG(p)}
+          ${ringSVG(p, !st || st.lvl < 3)}
           <div class="txt">
-            <span class="sub" style="font-size:14px">Safe to spend now</span>
-            <span class="big ${m.funLeft < 0 ? "neg" : ""}">${loading ? "—" : money(m.funLeft < 0 ? m.funLeft : spendNow)}</span>
-            <span class="sub">${loading ? "Loading your budget…" : m.funBudget <= 0 ? "Mark a category as Pocket money in Plan" : m.funLeft < 0 ? "Over your pocket money by " + money(-m.funLeft) : money(m.funLeft) + " pocket money budget left this month" + (m.pocketExtra ? " (incl. " + money(m.pocketExtra, 0) + " side income)" : "") + " · " + m.daysLeft + (m.daysLeft === 1 ? " day" : " days") + " to go"}</span>
+            <span class="sub" style="font-size:14px">Pocket money to spend now</span>
+            <span class="big ${pn && pn.avail < 0 ? (st && st.lvl === 3 ? "neg" : st && st.lvl === 2 ? "amb" : "pace") : ""}">${heroBig}</span>
+            <span class="sub">${esc(heroSub)}</span>
           </div>
         </div>
+        ${banner}
         ${dd}
       </section>
-      ${plan ? pocketWeekHTML(plan) : ""}
+      ${pn ? pocketCheckHTML(pn, fc) : ""}
       ${loading ? "" : dashCardHTML()}
       ${loading ? "" : doorDashCard(m, fc, k)}
       ${fc && (fc.missing.length || fc.paysMissing.length) ? `<div class="notice soft"><span>Your forecast is missing ${esc([...fc.missing.map((x) => x + " due day"), ...fc.paysMissing.map((x) => x + " payday")].join(", "))}. Add it in Plan so Free to spend is accurate.</span><button type="button" data-go="plan">Plan</button></div>` : ""}
@@ -1293,7 +1371,7 @@ window.LocalDB = (function(){
           const isFun = roleOf(c) === "fun", firstFun = isFun && cats().find((x) => roleOf(x) === "fun") === c;
           const covered = firstFun ? m.funCover : 0;
           const ov = m.overs.find((o) => o.id === c.id);
-          const b = num(c.budget), sp = m.spent[c.id] || 0, left = b - sp - covered;
+          const b = num(c.budget) + (firstFun ? m.pocketExtra : 0), sp = m.spent[c.id] || 0, left = b - sp - covered;
           const q = b ? (sp + covered) / b : (sp > 0 ? 2 : 0);
           const isBill = roleOf(c) === "bill";
           const billPaid = isBill && b > 0 && sp >= b * 0.97;
@@ -1321,7 +1399,7 @@ window.LocalDB = (function(){
       html += '<p class="foot">Tap a category to log a purchase in it</p>';
     }
     app.innerHTML = html;
-    wirePocket(plan);
+    wirePocket(pn);
   }
 
   // ---------------- accounts ----------------
@@ -1937,11 +2015,11 @@ window.LocalDB = (function(){
       saveBtn.textContent = ex ? "Save changes" : allToPocket ? "Save to pocket money" : st.type === "income" ? "Save and plan it" : "Save";
       const pw = el.querySelector("#paceWarn"); let wv = null;
       if (!ex && isFun() && a > 0 && !/^\d{4}-\d\d-\d\d$/.test("") ){
-        const mm = monthStats(monthKey(new Date())), pp = pocketPlan(mm, safeNow(mm));
-        if (pp){ wv = pocketVerdict(pp, a); if (wv && wv.t === "ok") wv = null; }
+        const mm = monthStats(monthKey(new Date())), fcN = freshFc(), pp = pocketNow(mm, fcN);
+        if (pp){ wv = pocketVerdict2(pp, fcN, a); if (wv && wv.t === "ok") wv = null; }
       }
       pw.hidden = !wv;
-      if (wv){ pw.className = "paceWarn " + wv.t; pw.innerHTML = "<b>" + esc(wv.h) + ".</b> " + esc(wv.p); if (wv.t === "bad") saveBtn.textContent = "Save anyway"; }
+      if (wv){ pw.className = "paceWarn " + wv.t; pw.innerHTML = "<b>" + esc(wv.h) + ".</b> " + wv.p; if (wv.t === "bad") saveBtn.textContent = "Save anyway"; }
       el.querySelectorAll("[data-type]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.type === st.type));
       el.querySelector("#catPick").hidden = st.type === "income";
       el.querySelector("#srcPick").hidden = st.type !== "income";

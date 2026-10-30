@@ -21,7 +21,7 @@ The app saves a copy of your data inside itself once a week (kept for 8 weeks, s
 - Goals can have an exact date, a first checkpoint, and be marked "DoorDash funds this".
 - Log a dash (earned, miles, hours) on Today. Gas is miles / mpg x price (Fusion mpg and gas price are editable). The net after gas counts toward the goal, and the card says how much to earn or how many hours to dash. If you fall behind, it offers to move the gap from pocket money, only with your OK.
 
-Last updated: Oct 29, 2026 · 3:31 AM ET.
+Last updated: Oct 30, 2026 · 1:08 PM ET.
 
 If an update doesn't show: give GitHub about a minute, then fully close and reopen the app once.
 
@@ -44,3 +44,10 @@ Today shows **Safe to spend now** (the bill-protecting ceiling), **This week** (
 
 ## Morning paper
 Guide > Morning paper. Paste the paper link from your Fuller Dispatch Apps Script and the app sends three things to your own Google Drive whenever it opens or you log something: safe to spend, bills due in the next 7 days, and next payday. Balances and transactions never leave the phone. Unlink any time.
+
+## Cash plan (Today)
+- **Bills first:** a green "Bills covered" line, or a red "Bills at risk" line that says how much to add to checking and by when. It looks at checking against bills before your next payday and the next 30 days of paychecks.
+- **One pocket money number:** your pace is the pocket money budget spread over the month and it grows a little every day. Pocket-flagged DoorDash money is available right away. It never goes above what checking can spare after bills.
+- **Back on pace date:** if you spend past the pace, the date when the daily growth catches up is shown, and the "Can I afford it?" box gives the date a purchase will fit.
+- **Three warnings:** 1 Heads-up (champagne "i", over pace, you can still spend), 2 Careful (amber "!", pocket money used up until payday, bills still covered), 3 Action needed (red, a bill is at risk). Red only ever means a bill is at risk.
+- A bill can be marked "not due" for a future month (config/billskip, e.g. a car payment already paid early).
