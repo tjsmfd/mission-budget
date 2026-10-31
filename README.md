@@ -21,7 +21,7 @@ The app saves a copy of your data inside itself once a week (kept for 8 weeks, s
 - Goals can have an exact date, a first checkpoint, and be marked "DoorDash funds this".
 - Log a dash (earned, miles, hours) on Today. Gas is miles / mpg x price (Fusion mpg and gas price are editable). The net after gas counts toward the goal, and the card says how much to earn or how many hours to dash. If you fall behind, it offers to move the gap from pocket money, only with your OK.
 
-Last updated: Oct 30, 2026 · 1:08 PM ET.
+Last updated: Oct 31, 2026 · 9:54 AM ET.
 
 If an update doesn't show: give GitHub about a minute, then fully close and reopen the app once.
 
