@@ -21,7 +21,7 @@ The app saves a copy of your data inside itself once a week (kept for 8 weeks, s
 - Goals can have an exact date, a first checkpoint, and be marked "DoorDash funds this".
 - Log a dash (earned, miles, hours) on Today. Gas is miles / mpg x price (Fusion mpg and gas price are editable). The net after gas counts toward the goal, and the card says how much to earn or how many hours to dash. If you fall behind, it offers to move the gap from pocket money, only with your OK.
 
-Last updated: Oct 31, 2026 · 9:54 AM ET.
+Last updated: Nov 1, 2026 · 6:29 PM ET.
 
 If an update doesn't show: give GitHub about a minute, then fully close and reopen the app once.
 
@@ -51,3 +51,7 @@ Guide > Morning paper. Paste the paper link from your Fuller Dispatch Apps Scrip
 - **Back on pace date:** if you spend past the pace, the date when the daily growth catches up is shown, and the "Can I afford it?" box gives the date a purchase will fit.
 - **Three warnings:** 1 Heads-up (champagne "i", over pace, you can still spend), 2 Careful (amber "!", pocket money used up until payday, bills still covered), 3 Action needed (red, a bill is at risk). Red only ever means a bill is at risk.
 - A bill can be marked "not due" for a future month (config/billskip, e.g. a car payment already paid early).
+
+## DoorDash split and plan balance (from Nov 2026)
+- Logging DoorDash income (note says DoorDash) now pre-fills pocket money with **70%** when your bills are covered and your goals are on track, otherwise **40%**. The rest goes to goals and your buffer. October dates still count all of it. Tap All, None or the percent chip to change it.
+- Plan has an "Expected DoorDash per month" box. 60% of it counts toward goals, so Left to assign can reach $0 without paychecks covering every goal dollar.

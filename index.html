@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Rosewood</title>
 <script>try{var _t=localStorage.getItem("mb-theme");document.documentElement.setAttribute("data-theme",_t==="classic"||_t==="pro"?_t:"sl")}catch(e){document.documentElement.setAttribute("data-theme","sl")}</script>
-<meta name="mb-build" content="1793454884">
+<meta name="mb-build" content="1793575776">
 <script>
 /* Auto-update: on open and on return to the app, check GitHub for a newer build and reload into it.
    Skips while a sheet is open so it never interrupts you mid-entry. */
-(function(){var B="1793454884";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
+(function(){var B="1793575776";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
 function chk(){fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){var m=t.match(/name="mb-build" content="(\d+)"/);if(!m||m[1]===B||Number(m[1])<Number(B))return;if(busy())return;try{if(sessionStorage.getItem("mb_rl")===m[1])return;sessionStorage.setItem("mb_rl",m[1])}catch(e){}location.replace(location.pathname+"?v="+m[1])}).catch(function(){})}
 window.addEventListener("load",function(){setTimeout(chk,1500)});document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();
 </script>
@@ -987,7 +987,7 @@ window.LocalDB = (function(){
     if (!lb) return null;
     const H = 31, cushion = cushionAmt();
     const {ev, missing} = billEvents(today, H);
-    const exp = expectedMonthly(), share = exp > 0 ? Math.min(1, goalsMonthly() / exp) : 0;
+    const exp = expectedMonthly(), share = exp > 0 ? Math.min(1, Math.max(0, goalsMonthly() - sideShare(plan())) / exp) : 0;
     const paysMissing = [];
     for (const i of incomes()){
       if (num(i.amount) <= 0) continue;
@@ -1193,6 +1193,27 @@ window.LocalDB = (function(){
     const avail = cash === null ? H : Math.min(H, cash);
     return {r, W: r * 7, H, cash, avail, base, dim, day};
   }
+  // Side income (DoorDash) split from Nov 2026: 70% to pocket money when bills are safe and goals are on track, otherwise 40%. The rest goes to goals/buffer.
+  const SPLIT_FROM = "2026-11-01";
+  function goalsOnTrack(){
+    const now = todayStart();
+    for (const g of S.goals){
+      if (g.kind === "setaside" || g.dd || !(num(g.target) > 0)) continue;
+      const bal = goalBalance(g), tgt = num(g.target); if (bal >= tgt - 0.005) continue;
+      const due = g.due ? parseD(g.due) : g.date ? new Date(parseD(g.date).getFullYear(), parseD(g.date).getMonth() + 1, 0) : null; if (!due) continue;
+      const months = Math.max(1, (due - now) / (30.44 * 864e5));
+      if (num(g.monthly) < (tgt - bal) / months - 0.5) return false;
+    }
+    return true;
+  }
+  function sideSplit(){
+    const fc = freshFc(), m = monthStats(monthKey(new Date())), stt = moneyStatus(m, fc, pocketNow(m, fc));
+    const billsOk = !!fc && stt.lvl !== 3 && stt.lvl !== 2, goalsOk = goalsOnTrack();
+    const pct = billsOk && goalsOk ? 70 : 40;
+    const why = pct === 70 ? "Bills are covered and your goals are on track." : !fc ? "Update your checking balance so I can check your bills. Using the safe 40%." : stt.lvl === 3 || stt.lvl === 2 ? "Your checking is tight for bills right now." : "A goal is behind pace.";
+    return {pct, why};
+  }
+  const sideShare = (p) => { const mo = num(p && p.side && p.side.monthly); return mo > 0 ? round2(mo * 0.6) : 0; }; // goals/buffer share counted in the plan (the 40% case)
   const safeNow = (m) => { const pn = pocketNow(m, freshFc()); return pn ? Math.max(0, pn.avail) : m.funLeft; };
   const nextPayD = (fc) => { const e = fc && fc.ev.find((x) => x.kind === 1); return e ? e.d : null; };
   // Date when a purchase of `amt` fits the pace again (and the bills check), or null if it fits now.
@@ -1719,12 +1740,13 @@ window.LocalDB = (function(){
     const g = {Needs: 0, Wants: 0};
     p.categories.forEach((c) => { if (g[c.group] !== undefined) g[c.group] += num(c.budget); });
     const gm = goalsMonthly();
-    const lta = round2(inc - g.Needs - g.Wants - gm);
+    const sg = sideShare(p), lta = round2(inc + sg - g.Needs - g.Wants - gm);
     const st = Math.abs(lta) < 1 ? ["ok", "Balanced"] : lta > 0 ? ["under", "Unassigned"] : ["over", "Over budget"];
     const pc = (v) => inc ? " · " + Math.round((v / inc) * 100) + "%" : "";
     return `<div class="sumtop"><span class="sub" style="font-size:14px">Left to assign each month</span><span class="big" style="color:var(--fg)">${money(lta)}</span><span class="status ${st[0]}">${st[1]}</span></div>
       <div class="sumlines">
         <div><span>Expected income</span><b>${money(inc)}</b></div>
+        ${sg ? `<div><span>DoorDash share to goals (60% of ~${money(num(p.side.monthly), 0)})</span><b>+${money(sg)}</b></div>` : ""}
         <div><span><span class="dot" style="--gc:var(--needs)"></span>Needs${pc(g.Needs)}</span><span>−${money(g.Needs)}</span></div>
         <div><span><span class="dot" style="--gc:var(--wants)"></span>Wants${pc(g.Wants)}</span><span>−${money(g.Wants)}</span></div>
         <div><span><span class="dot" style="--gc:var(--savings)"></span>Goals${pc(gm)}</span><span>−${money(gm)}</span></div>
@@ -1749,6 +1771,8 @@ window.LocalDB = (function(){
       <div class="notice soft"><span>Subscriptions are listed one by one on the Forecast tab.</span><button type="button" data-go="forecast">Forecast</button></div>
       <div class="notice soft"><span>Savings amounts are set per goal on the Goals tab and count toward this plan.</span><button type="button" data-go="goals">Goals</button></div>
       <div class="sechead"><h2>Safety cushion</h2><span>forecast</span></div>
+      <div class="sechead"><h2>DoorDash</h2><span>expected per month</span></div>
+      <section class="pcard" aria-label="Expected DoorDash"><div class="prow"><div class="r"><label class="hint" for="sidemo" style="flex:1">About how much DoorDash do you expect to earn each month? 60% of it is counted toward your goals so Left to assign balances. Leave blank to count none.</label><input class="field num" id="sidemo" inputmode="decimal" style="width:100px;flex:none" placeholder="$0" value="${draft.side && num(draft.side.monthly) > 0 ? num(draft.side.monthly) : ""}"></div></div></section>
       <section class="pcard" aria-label="Safety cushion"><div class="prow"><div class="r"><label class="hint" for="cushion" style="flex:1">Never let Free to spend dip your projected checking below this, in case a paycheck comes in short or late.</label><input class="field num" id="cushion" inputmode="decimal" style="width:100px;flex:none" value="${draft.cushion != null ? num(draft.cushion) : 25}"></div></div></section>
       <div class="sechead"><h2>Overspending</h2><span>pocket money</span></div>
       <section class="pcard" aria-label="Overspending"><div class="prow"><label style="display:flex;gap:12px;align-items:center;font-size:14px;min-height:44px"><input type="checkbox" id="coverOver" ${draft.coverOver !== false ? "checked" : ""} style="width:22px;height:22px;flex:none;accent-color:var(--accent)"> When I go over on gas, essentials, or a bill, take the extra out of my pocket money</label></div></section>
@@ -1848,6 +1872,7 @@ window.LocalDB = (function(){
     body.income = body.income.map((i) => ({...i, amount: round2(num(i.amount))}));
     body.categories = body.categories.map((c) => { const o = {...c, budget: round2(num(c.budget))}; const dd = parseInt(c.dueDay, 10); if (dd >= 1 && dd <= 31) o.dueDay = dd; else delete o.dueDay; return o; });
     body.cushion = draft.cushion != null ? round2(num(draft.cushion)) : 25;
+    body.side = {monthly: draft.side && num(draft.side.monthly) > 0 ? round2(num(draft.side.monthly)) : 0};
     S.plan = body;
     const ss = document.getElementById("saveState");
     if (!S.db){ if (ss) ss.textContent = "Not saving in this view"; return; }
@@ -1984,9 +2009,9 @@ window.LocalDB = (function(){
       <div id="tagPick" hidden><div class="chiphead">What was it?</div><div class="typetog" role="group" aria-label="Kind of pocket money purchase"><button type="button" data-tag="food">Ate out</button><button type="button" data-tag="random">Random</button></div></div>
       <div class="pick" id="srcPick" hidden>${srcChips}<p class="hint" style="margin:0">Log take-home pay: the amount that hit your bank.</p></div>
       <div id="pocketPick" hidden><div class="chiphead">Add to pocket money this month</div>
-        <div class="row2"><div class="chips"><button type="button" class="chip" data-pk="all" aria-pressed="false" style="--gc:var(--accent)">All</button><button type="button" class="chip" data-pk="70" aria-pressed="false" style="--gc:var(--accent)">70%</button><button type="button" class="chip" data-pk="0" aria-pressed="false" style="--gc:var(--muted)">None</button></div>
+        <div class="row2"><div class="chips"><button type="button" class="chip" data-pk="all" aria-pressed="false" style="--gc:var(--accent)">All</button><button type="button" class="chip" data-pk="rule" aria-pressed="false" style="--gc:var(--accent)">${sideSplit().pct}%</button><button type="button" class="chip" data-pk="0" aria-pressed="false" style="--gc:var(--muted)">None</button></div>
           <input class="field num" id="pocketAmt" inputmode="decimal" autocomplete="off" aria-label="Amount to add to pocket money" placeholder="$0"></div>
-        <p class="hint" style="margin:8px 0 0">Raises Free to spend right away. Counts for this month only, so your plan doesn't change. Notes that say DoorDash fill this in for you.</p></div>
+        <p class="hint" style="margin:8px 0 0">Raises your pocket money right away. Counts for this month only, so your plan doesn't change. <span id="pkWhy"></span></p></div>
       <div class="row2">
         <div><label class="lab" for="note">Note</label><input class="field" id="note" placeholder="Optional" autocomplete="off" value="${ex ? esc(ex.note || "") : ""}"></div>
         <div><label class="lab" for="date">Date</label><input class="field" id="date" type="date" value="${ex ? esc(ex.date) : today}"></div>
@@ -1997,11 +2022,13 @@ window.LocalDB = (function(){
     const amt = el.querySelector("#amt"), saveBtn = el.querySelector("#saveTx");
     const noteEl = el.querySelector("#note"), pk = el.querySelector("#pocketAmt");
     st.pkTouched = !!ex;
+    const SS = sideSplit(); { const w = el.querySelector("#pkWhy"); if (w) w.textContent = "DoorDash: " + SS.pct + "% to pocket money (" + SS.why + ") The rest goes to goals and your buffer."; }
     if (ex && ex.pocket) pk.value = num(ex.pocket);
     const autoPk = () => {
       if (st.pkTouched) return;
       const a = round2(num(amt.value));
-      pk.value = (st.type === "income" && st.src === "other" && /door\s*dash/i.test(noteEl.value) && a > 0) ? a : "";
+      const rule = (el.querySelector("#date").value || today) >= SPLIT_FROM;
+      pk.value = (st.type === "income" && st.src === "other" && /door\s*dash/i.test(noteEl.value) && a > 0) ? (rule ? round2(a * SS.pct / 100) : a) : "";
     };
     const valid = () => num(amt.value) > 0 && (st.type === "income" ? !!st.src : !!st.cat);
     const sync = () => {
@@ -2009,7 +2036,7 @@ window.LocalDB = (function(){
       const showPk = st.type === "income" && st.src === "other";
       const a = round2(num(amt.value)), pv = Math.min(round2(num(pk.value)), a || Infinity);
       el.querySelector("#pocketPick").hidden = !showPk;
-      el.querySelectorAll("[data-pk]").forEach((b) => b.setAttribute("aria-pressed", String(a > 0 && (b.dataset.pk === "all" ? pv === a : b.dataset.pk === "70" ? pv === round2(a * 0.7) : pv <= 0))));
+      el.querySelectorAll("[data-pk]").forEach((b) => b.setAttribute("aria-pressed", String(a > 0 && (b.dataset.pk === "all" ? pv === a : b.dataset.pk === "rule" ? pv === round2(a * SS.pct / 100) : pv <= 0))));
       const allToPocket = showPk && a > 0 && pv >= a;
       saveBtn.disabled = !valid();
       saveBtn.textContent = ex ? "Save changes" : allToPocket ? "Save to pocket money" : st.type === "income" ? "Save and plan it" : "Save";
@@ -2031,10 +2058,12 @@ window.LocalDB = (function(){
     el.querySelectorAll("[data-tag]").forEach((b) => b.onclick = () => { st.tag = b.dataset.tag; sync(); });
     amt.addEventListener("input", sync);
     noteEl.addEventListener("input", sync);
+    el.querySelector("#date").addEventListener("input", sync);
+    el.querySelector("#date").addEventListener("change", sync);
     pk.addEventListener("input", () => { st.pkTouched = true; sync(); });
     el.querySelectorAll("[data-pk]").forEach((b) => b.onclick = () => {
       const a = round2(num(amt.value)); st.pkTouched = true;
-      pk.value = b.dataset.pk === "all" ? (a || "") : b.dataset.pk === "70" ? (a ? round2(a * 0.7) : "") : "";
+      pk.value = b.dataset.pk === "all" ? (a || "") : b.dataset.pk === "rule" ? (a ? round2(a * SS.pct / 100) : "") : "";
       sync();
     });
     el.querySelectorAll("[data-type]").forEach((b) => b.onclick = () => { st.type = b.dataset.type; sync(); });
@@ -2494,6 +2523,7 @@ window.LocalDB = (function(){
   function updatePer(row, r){ const h = row.querySelector("[data-per]"); if (h) h.textContent = (r.kind === "varies" ? "Typical take-home per paycheck" : "Take-home each time") + " · ≈ " + money(num(r.amount) * (FREQ[r.freq] || FREQ.monthly)[1], 0) + "/month"; }
   const onEdit = (e) => {
     if (e.target.id === "cushion" && draft){ draft.cushion = e.target.value; queueSave(); return; }
+    if (e.target.id === "sidemo" && draft){ draft.side = {monthly: e.target.value}; queueSave(); refreshPlanSummary(); return; }
     const f = e.target.dataset.f; if (!f || !draft) return;
     const ir = e.target.closest("[data-inc]"), cr = e.target.closest("[data-cat]");
     if (ir){ const r = draft.income.find((x) => x.id === ir.dataset.inc); if (r){ r[f] = e.target.value; updatePer(ir, r); } }
