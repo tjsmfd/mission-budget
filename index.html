@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Rosewood</title>
 <script>try{var _t=localStorage.getItem("mb-theme");document.documentElement.setAttribute("data-theme",_t==="classic"||_t==="pro"?_t:"sl")}catch(e){document.documentElement.setAttribute("data-theme","sl")}</script>
-<meta name="mb-build" content="1793575776">
+<meta name="mb-build" content="1793798196">
 <script>
 /* Auto-update: on open and on return to the app, check GitHub for a newer build and reload into it.
    Skips while a sheet is open so it never interrupts you mid-entry. */
-(function(){var B="1793575776";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
+(function(){var B="1793798196";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
 function chk(){fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){var m=t.match(/name="mb-build" content="(\d+)"/);if(!m||m[1]===B||Number(m[1])<Number(B))return;if(busy())return;try{if(sessionStorage.getItem("mb_rl")===m[1])return;sessionStorage.setItem("mb_rl",m[1])}catch(e){}location.replace(location.pathname+"?v="+m[1])}).catch(function(){})}
 window.addEventListener("load",function(){setTimeout(chk,1500)});document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();
 </script>
@@ -1775,6 +1775,7 @@ window.LocalDB = (function(){
       <section class="pcard" aria-label="Expected DoorDash"><div class="prow"><div class="r"><label class="hint" for="sidemo" style="flex:1">About how much DoorDash do you expect to earn each month? 60% of it is counted toward your goals so Left to assign balances. Leave blank to count none.</label><input class="field num" id="sidemo" inputmode="decimal" style="width:100px;flex:none" placeholder="$0" value="${draft.side && num(draft.side.monthly) > 0 ? num(draft.side.monthly) : ""}"></div></div></section>
       <section class="pcard" aria-label="Safety cushion"><div class="prow"><div class="r"><label class="hint" for="cushion" style="flex:1">Never let Free to spend dip your projected checking below this, in case a paycheck comes in short or late.</label><input class="field num" id="cushion" inputmode="decimal" style="width:100px;flex:none" value="${draft.cushion != null ? num(draft.cushion) : 25}"></div></div></section>
       <div class="sechead"><h2>Overspending</h2><span>pocket money</span></div>
+      <section class="pcard" aria-label="Automatic bills"><div class="prow"><label style="display:flex;gap:12px;align-items:center;font-size:14px;min-height:44px"><input type="checkbox" id="autoBillsOn" ${!S.auto || S.auto.on !== false ? "checked" : ""} style="width:22px;height:22px;flex:none;accent-color:var(--accent)"> On a bill's or subscription's due date, add it to History and take it out of my checking (unless I already logged it)</label></div></section>
       <section class="pcard" aria-label="Overspending"><div class="prow"><label style="display:flex;gap:12px;align-items:center;font-size:14px;min-height:44px"><input type="checkbox" id="coverOver" ${draft.coverOver !== false ? "checked" : ""} style="width:22px;height:22px;flex:none;accent-color:var(--accent)"> When I go over on gas, essentials, or a bill, take the extra out of my pocket money</label></div></section>
       <p class="foot">Goal: get Left to assign to $0</p>`;
     document.getElementById("addInc").onclick = () => { const r = {id: uid(), name: "", kind: "fixed", freq: "monthly", amount: 0}; draft.income.push(r); document.getElementById("incList").insertAdjacentHTML("beforeend", incRow(r)); focusLast("#incList"); queueSave(); };
@@ -2532,7 +2533,7 @@ window.LocalDB = (function(){
   };
   app.addEventListener("toggle", (e) => { const d = e.target; if (d && d.matches && d.matches("details[data-dd]")) S.ddOpen = d.open; if (d && d.matches && d.matches("details[data-wk]")) S.wkOpen = d.open; }, true);
   app.addEventListener("input", onEdit);
-  app.addEventListener("change", (e) => { if (e.target.tagName === "SELECT") onEdit(e); else if (e.target.id === "coverOver" && draft){ draft.coverOver = e.target.checked; queueSave(); } });
+  app.addEventListener("change", (e) => { if (e.target.tagName === "SELECT") onEdit(e); else if (e.target.id === "coverOver" && draft){ draft.coverOver = e.target.checked; queueSave(); } else if (e.target.id === "autoBillsOn" && S.db){ const on = e.target.checked; S.auto = {since: ymd(new Date(new Date().getFullYear(), new Date().getMonth(), 1)), posted: {}, ...(S.auto || {}), on}; S.db.doc("config/autobills").set(S.auto); if (on) runAutoBills(); } });
 
   let toastTimer;
   function toast(msg, action){
@@ -2541,6 +2542,49 @@ window.LocalDB = (function(){
     el.textContent = msg; el.hidden = false;
     if (action){ const b = document.createElement("button"); b.type = "button"; b.textContent = action.label; b.onclick = () => { el.hidden = true; clearTimeout(toastTimer); action.fn(); }; el.appendChild(b); }
     clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.hidden = true; }, action ? 6000 : 2800);
+  }
+
+  // ---------------- auto-post bills on their due date ----------------
+  // On/after a bill's or subscription's due day, add it to History (so checking drops) unless you already logged it. Tap it in History to fix the amount.
+  let autoBusy = false;
+  async function runAutoBills(){
+    if (autoBusy || S.status !== "live" || !S.db || !S.plan || S.plan.example || !S.goalsLoaded) return;
+    const cfg = S.auto || null; if (cfg && cfg.on === false) return;
+    autoBusy = true;
+    try {
+      const today = todayStart(), acc = S.accounts, asOf = acc && acc.asOf ? acc.asOf : "", asOfDay = asOf ? ymd(new Date(asOf)) : "";
+      const sinceD = cfg && cfg.since ? cfg.since : ymd(new Date(today.getFullYear(), today.getMonth(), 1));
+      const since = parseD(sinceD), posted = {...((cfg && cfg.posted) || {})};
+      const made = [], byMonth = {};
+      for (let y = since.getFullYear(), mo = since.getMonth(); new Date(y, mo, 1) <= today; mo++){
+        if (mo > 11){ mo = 0; y++; }
+        const k = y + "-" + String(mo + 1).padStart(2, "0"), list = [...(await loadMonth(k))];
+        const add = (key, due, amount, cat, name, match) => {
+          if (posted[key] || amount <= 0 || due < since || due > today || (S.billSkip[k] || []).includes(cat.id)) return;
+          if (match(list)){ posted[key] = "logged"; return; }
+          const dueY = ymd(due), after = asOfDay && dueY > asOfDay;
+          const t = {id: uid(), date: dueY, amount: round2(amount), type: "expense", categoryId: cat.id, incomeId: null, note: name + " (auto-posted on its due date)", ts: (!asOfDay || after) ? new Date().toISOString() : (dueY === asOfDay ? asOf : dueY + "T12:00:00.000Z"), auto: true};
+          list.push(t); posted[key] = t.id; made.push({name, amount: t.amount}); byMonth[k] = list;
+        };
+        for (const c of cats()){
+          if (roleOf(c) !== "bill") continue;
+          if (isSubsCat(c) && S.subsList.length){
+            for (const x of S.subsList){
+              const dd = parseInt(x.dueDay, 10), price = num(x.price); if (!dd || price <= 0) continue;
+              const due = dueIn(y, mo, dd), nm = (x.name || "").toLowerCase();
+              add("s:" + x.id + "|" + k, due, price, c, x.name || "Subscription", (L) => L.some((t) => t.type === "expense" && t.categoryId === c.id && Math.abs((parseD(t.date) - due) / 864e5) <= 4 && ((nm && (t.note || "").toLowerCase().includes(nm)) || Math.abs(num(t.amount) - price) <= 1)));
+            }
+            continue;
+          }
+          const dd = parseInt(c.dueDay, 10), b = num(c.budget); if (!dd || b <= 0) continue;
+          add("c:" + c.id + "|" + k, dueIn(y, mo, dd), b, c, c.name, (L) => L.filter((t) => t.type === "expense" && t.categoryId === c.id).reduce((a, t) => a + num(t.amount), 0) >= b * 0.97);
+        }
+      }
+      for (const k in byMonth){ S.months[k] = byMonth[k]; await S.db.doc("months/" + k).set({tx: byMonth[k]}); }
+      const next = {on: true, since: sinceD, posted};
+      if (made.length || !cfg){ await S.db.doc("config/autobills").set(next); }
+      if (made.length){ toast("Added to History: " + made.map((x) => x.name + " " + money(x.amount)).join(", ")); render(); }
+    } catch (e){} finally { autoBusy = false; }
   }
 
   // ---------------- boot ----------------
@@ -2558,7 +2602,7 @@ window.LocalDB = (function(){
       } catch (e){} try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e){} }
     if (!db){ S.status = "offline"; S.plan = starterPlan(); S.goalsLoaded = true; S.months[monthKey(new Date())] = []; render(); return; }
     S.db = db;
-    document.addEventListener("visibilitychange", async () => { if (document.hidden) return; try { if (!S.empty && await db.weeklySnapshot()){ S.weekly = await db.weeklyList(); if (S.tab === "guide") render(); } } catch (e){} });
+    document.addEventListener("visibilitychange", async () => { if (document.hidden) return; setTimeout(runAutoBills, 600); try { if (!S.empty && await db.weeklySnapshot()){ S.weekly = await db.weeklyList(); if (S.tab === "guide") render(); } } catch (e){} });
     const _doc = db.doc.bind(db);
     db.doc = (p) => { const d = _doc(p), set = d.set; d.set = async (b) => { await set(b); if (S.empty){ S.empty = false; } }; return d; };
     db.doc("config/plan").onSnapshot((snap) => {
@@ -2587,11 +2631,16 @@ window.LocalDB = (function(){
       S.dash = snap.exists ? {items: [], ...JSON.parse(JSON.stringify(snap.data()))} : {items: []};
       if (S.tab !== "plan") render();
     }, () => {});
+    db.doc("config/autobills").onSnapshot((snap) => {
+      S.auto = snap.exists ? JSON.parse(JSON.stringify(snap.data())) : null;
+      if (S.tab === "plan" && draft) { const cb = document.getElementById("autoBillsOn"); if (cb) cb.checked = !S.auto || S.auto.on !== false; } else if (S.tab !== "plan") render();
+    }, () => {});
     db.doc("config/guide").onSnapshot((snap) => {
       S.guide = snap.exists ? {done: {}, ...JSON.parse(JSON.stringify(snap.data()))} : {done: {}};
       if (S.tab !== "plan") render();
     }, () => {});
     ensureMonth(monthKey(new Date()));
+    setTimeout(runAutoBills, 1500); setTimeout(runAutoBills, 4000);
   })();
 })();
 </script>
