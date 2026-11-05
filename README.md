@@ -21,7 +21,7 @@ The app saves a copy of your data inside itself once a week (kept for 8 weeks, s
 - Goals can have an exact date, a first checkpoint, and be marked "DoorDash funds this".
 - Log a dash (earned, miles, hours) on Today. Gas is miles / mpg x price (Fusion mpg and gas price are editable). The net after gas counts toward the goal, and the card says how much to earn or how many hours to dash. If you fall behind, it offers to move the gap from pocket money, only with your OK.
 
-Last updated: Nov 4, 2026 · 8:16 AM ET.
+Last updated: Nov 5, 2026 · 11:49 AM ET.
 
 If an update doesn't show: give GitHub about a minute, then fully close and reopen the app once.
 
@@ -58,3 +58,6 @@ Guide > Morning paper. Paste the paper link from your Fuller Dispatch Apps Scrip
 
 ## Bills post themselves (Plan has a switch)
 On the due day of each bill and subscription (and any day after, if you didn't open the app), the app adds it to History, which takes it out of your checking estimate. It skips anything you already logged, any bill marked "not due" for the month, and nothing before the start of the month it was turned on. Tap an entry in History to fix the amount if your bank charged something different.
+
+## Moving savings to checking
+Today → Accounts → **Move money** (or Goals → a goal → **Take money out**) moves money out of a savings goal. By default it lands in your checking: checking goes up, savings and the goal go down, and it shows in History. Choose "Spent from savings" if you paid for something straight from savings (checking doesn't change).
