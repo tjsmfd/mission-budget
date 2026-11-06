@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Rosewood</title>
 <script>try{var _t=localStorage.getItem("mb-theme");document.documentElement.setAttribute("data-theme",_t==="classic"||_t==="pro"?_t:"sl")}catch(e){document.documentElement.setAttribute("data-theme","sl")}</script>
-<meta name="mb-build" content="1794008980">
+<meta name="mb-build" content="1794009316">
 <script>
 /* Auto-update: on open and on return to the app, check GitHub for a newer build and reload into it.
    Skips while a sheet is open so it never interrupts you mid-entry. */
-(function(){var B="1794008980";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
+(function(){var B="1794009316";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
 function chk(){fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){var m=t.match(/name="mb-build" content="(\d+)"/);if(!m||m[1]===B||Number(m[1])<Number(B))return;if(busy())return;try{if(sessionStorage.getItem("mb_rl")===m[1])return;sessionStorage.setItem("mb_rl",m[1])}catch(e){}location.replace(location.pathname+"?v="+m[1])}).catch(function(){})}
 window.rwCheck=function(f){if(f){try{sessionStorage.removeItem("mb_rl")}catch(e){}}chk()};window.addEventListener("load",function(){setTimeout(chk,1500)});document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();
 </script>
@@ -1703,7 +1703,7 @@ window.LocalDB = (function(){
             const bc = bills.filter((c) => Math.abs(num(c.budget) - amt) <= Math.max(1.5, num(c.budget) * 0.03));
             if (bc.length === 1) cat = bc[0];
           }
-          if (!cat && GAS_RX.test(t.raw || name)){ if (amt > 40 && gasCat) cat = gasCat; else if (funCat){ cat = funCat; tag = "random"; } }
+          if (!cat && GAS_RX.test(t.raw || name) && gasCat) cat = gasCat;
           if (!cat && funCat && /^FOOD_AND_DRINK_(RESTAURANT|FAST_FOOD|COFFEE|BEER)/.test(t.category || t.cat2 || "")){ cat = funCat; tag = "food"; }
           if (!cat && funCat && /^FOOD_AND_DRINK$/.test(t.category || "")){ cat = funCat; tag = "food"; }
           if (!cat && funCat){ cat = funCat; tag = "random"; review = true; }

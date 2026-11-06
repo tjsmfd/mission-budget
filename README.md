@@ -21,7 +21,7 @@ The app saves a copy of your data inside itself once a week (kept for 8 weeks, s
 - Goals can have an exact date, a first checkpoint, and be marked "DoorDash funds this".
 - Log a dash (earned, miles, hours) on Today. Gas is miles / mpg x price (Fusion mpg and gas price are editable). The net after gas counts toward the goal, and the card says how much to earn or how many hours to dash. If you fall behind, it offers to move the gap from pocket money, only with your OK.
 
-Last updated: Nov 6, 2026 · 6:49 PM ET.
+Last updated: Nov 6, 2026 · 6:55 PM ET.
 
 If an update doesn't show: give GitHub about a minute, then fully close and reopen the app once.
 
@@ -69,4 +69,4 @@ Today now shows one big pocket-money number with a short status chip (On pace / 
 Plan -> Bank: enter the bridge address and passphrase. Rosewood then reads checking (available balance) and savings from the bank through the Cloudflare Worker bridge (Plaid, read-only), on app open and every time you return to the app. In bank mode, entries logged in Rosewood no longer adjust the balance estimate, because the bank is the source of truth. The passphrase is stored only on the phone (localStorage), never in the backup or the repo. Turn off in Plan -> Bank.
 
 ## Auto-logging bank activity (Nov 2026)
-After each balance sync Rosewood reads new bank activity from today onward (cursor and rules in config/bankTx). Purchases are categorized (remembered merchant rule, bill amount match, gas over $40 = Gas, small gas and food = Pocket money), deposits go to the matching paycheck source or DoorDash (with the 70/40 pocket share), checking/savings transfers become a savings-goal move on Emergency Fund (not spending). Entries you already logged by hand, or bills Rosewood auto-posted, are matched instead of duplicated. Pending charges are updated when they post and removed if they disappear. Everything lands in the "New from bank" box on Today: change the category (it remembers the merchant), OK, or Undo.
+After each balance sync Rosewood reads new bank activity from today onward (cursor and rules in config/bankTx). Purchases are categorized (remembered merchant rule, bill amount match, every gas station charge = Gas, food = Pocket money), deposits go to the matching paycheck source or DoorDash (with the 70/40 pocket share), checking/savings transfers become a savings-goal move on Emergency Fund (not spending). Entries you already logged by hand, or bills Rosewood auto-posted, are matched instead of duplicated. Pending charges are updated when they post and removed if they disappear. Everything lands in the "New from bank" box on Today: change the category (it remembers the merchant), OK, or Undo.
