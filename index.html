@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Rosewood</title>
 <script>try{var _t=localStorage.getItem("mb-theme");document.documentElement.setAttribute("data-theme",_t==="classic"||_t==="pro"?_t:"sl")}catch(e){document.documentElement.setAttribute("data-theme","sl")}</script>
-<meta name="mb-build" content="1794008279">
+<meta name="mb-build" content="1794008600">
 <script>
 /* Auto-update: on open and on return to the app, check GitHub for a newer build and reload into it.
    Skips while a sheet is open so it never interrupts you mid-entry. */
-(function(){var B="1794008279";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
+(function(){var B="1794008600";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
 function chk(){fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){var m=t.match(/name="mb-build" content="(\d+)"/);if(!m||m[1]===B||Number(m[1])<Number(B))return;if(busy())return;try{if(sessionStorage.getItem("mb_rl")===m[1])return;sessionStorage.setItem("mb_rl",m[1])}catch(e){}location.replace(location.pathname+"?v="+m[1])}).catch(function(){})}
-window.addEventListener("load",function(){setTimeout(chk,1500)});document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();
+window.rwCheck=function(f){if(f){try{sessionStorage.removeItem("mb_rl")}catch(e){}}chk()};window.addEventListener("load",function(){setTimeout(chk,1500)});document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();
 </script>
 <meta name="theme-color" content="#160810">
 <meta name="color-scheme" content="dark">
@@ -395,6 +395,8 @@ html[data-theme="sl"] .tab[aria-current="page"]::after{content:"";position:absol
 .hero .big.pace{color:var(--accent)}.hero .big.amb{color:var(--warn)}
 .emptycard{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;padding:20px;border-radius:20px;background:var(--card)}.emptycard b{font-size:17px}.emptycard .pillbtn{margin-top:6px;min-height:44px;padding:0 22px;font-size:15px}
 .dtTop{text-align:center;display:flex;flex-direction:column;gap:6px}.dtBig{font-family:var(--serif,"Fraunces",Georgia,serif);font-size:48px;font-weight:600;line-height:1}.dtRows{border-radius:18px;background:var(--card2);overflow:hidden}.dtRows div{display:flex;justify-content:space-between;gap:12px;padding:13px 16px;min-height:44px;box-sizing:border-box;align-items:center;font-size:16px}.dtRows div+div{border-top:1px solid var(--track)}.dtRows span:first-child{color:var(--muted)}.dtMenu{display:flex;flex-direction:column;border-radius:16px;background:var(--card2);overflow:hidden}.dtMenu button{min-height:48px;background:none;border:0;color:var(--fg);font:inherit;font-size:16px;text-align:left;padding:0 16px}.dtMenu button+button{border-top:1px solid var(--track)}.dtMenu .del{color:var(--red)}
+.ptr{position:fixed;top:0;left:50%;transform:translate(-50%,-60px);z-index:30;background:var(--card2);color:var(--fg);border:1px solid var(--track);border-radius:999px;padding:8px 16px;font-size:13px;font-weight:600;pointer-events:none;opacity:0;transition:opacity .15s}
+.ptr.on{opacity:1}
 .tk{display:flex;flex-direction:column;align-items:center;gap:10px;padding:8px 0 4px;text-align:center}
 .tkbtn{background:none;border:0;color:inherit;font:inherit;display:flex;flex-direction:column;align-items:center;gap:6px;min-height:44px;padding:4px 16px;cursor:pointer}
 .tkl{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
@@ -1374,6 +1376,27 @@ window.LocalDB = (function(){
       box.querySelector("#dtDel").onclick = () => { if (confirm("Delete this entry? This can't be undone.")){ close(); deleteTx(k, tx.id); } };
     };
   }
+  // Pull down from the top to refresh: checks for a newer app version and re-syncs the bank.
+  (function(){
+    const ind = document.createElement("div"); ind.className = "ptr"; ind.setAttribute("role", "status"); document.body.appendChild(ind);
+    let y0 = null, dy = 0, busy = false;
+    const sheetOpen = () => !!document.querySelector(".sheet,[role=dialog]");
+    window.addEventListener("touchstart", (e) => { y0 = (window.scrollY <= 0 && !busy && !sheetOpen() && e.touches.length === 1) ? e.touches[0].clientY : null; dy = 0; }, {passive: true});
+    window.addEventListener("touchmove", (e) => {
+      if (y0 === null) return;
+      dy = e.touches[0].clientY - y0;
+      if (dy > 12){ ind.classList.add("on"); ind.style.transform = "translate(-50%," + (Math.min(dy, 110) * 0.6 + 40) + "px)"; ind.textContent = dy > 80 ? "Release to refresh" : "Pull to refresh"; }
+      else ind.classList.remove("on");
+    }, {passive: true});
+    window.addEventListener("touchend", async () => {
+      if (y0 === null) return; const go = dy > 80; y0 = null;
+      if (!go){ ind.classList.remove("on"); return; }
+      busy = true; ind.textContent = "Refreshing..."; ind.style.transform = "translate(-50%,64px)";
+      try { if (window.rwCheck) window.rwCheck(true); await bankSync(true); runAutoBills(); render(); } catch (e){}
+      ind.textContent = "Up to date"; setTimeout(() => { ind.classList.remove("on"); busy = false; }, 900);
+    }, {passive: true});
+  })();
+
   function openPace(focus){
     const m = monthStats(monthKey(new Date())), fc = freshFc(), pn = pocketNow(m, fc);
     if (!pn){ toast("Mark a category as Pocket money in Plan first."); return; }
