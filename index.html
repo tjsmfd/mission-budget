@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Rosewood</title>
 <script>try{var _t=localStorage.getItem("mb-theme");document.documentElement.setAttribute("data-theme",_t==="classic"||_t==="pro"?_t:"sl")}catch(e){document.documentElement.setAttribute("data-theme","sl")}</script>
-<meta name="mb-build" content="1794008600">
+<meta name="mb-build" content="1794008980">
 <script>
 /* Auto-update: on open and on return to the app, check GitHub for a newer build and reload into it.
    Skips while a sheet is open so it never interrupts you mid-entry. */
-(function(){var B="1794008600";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
+(function(){var B="1794008980";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
 function chk(){fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){var m=t.match(/name="mb-build" content="(\d+)"/);if(!m||m[1]===B||Number(m[1])<Number(B))return;if(busy())return;try{if(sessionStorage.getItem("mb_rl")===m[1])return;sessionStorage.setItem("mb_rl",m[1])}catch(e){}location.replace(location.pathname+"?v="+m[1])}).catch(function(){})}
 window.rwCheck=function(f){if(f){try{sessionStorage.removeItem("mb_rl")}catch(e){}}chk()};window.addEventListener("load",function(){setTimeout(chk,1500)});document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();
 </script>
@@ -397,6 +397,7 @@ html[data-theme="sl"] .tab[aria-current="page"]::after{content:"";position:absol
 .dtTop{text-align:center;display:flex;flex-direction:column;gap:6px}.dtBig{font-family:var(--serif,"Fraunces",Georgia,serif);font-size:48px;font-weight:600;line-height:1}.dtRows{border-radius:18px;background:var(--card2);overflow:hidden}.dtRows div{display:flex;justify-content:space-between;gap:12px;padding:13px 16px;min-height:44px;box-sizing:border-box;align-items:center;font-size:16px}.dtRows div+div{border-top:1px solid var(--track)}.dtRows span:first-child{color:var(--muted)}.dtMenu{display:flex;flex-direction:column;border-radius:16px;background:var(--card2);overflow:hidden}.dtMenu button{min-height:48px;background:none;border:0;color:var(--fg);font:inherit;font-size:16px;text-align:left;padding:0 16px}.dtMenu button+button{border-top:1px solid var(--track)}.dtMenu .del{color:var(--red)}
 .ptr{position:fixed;top:0;left:50%;transform:translate(-50%,-60px);z-index:30;background:var(--card2);color:var(--fg);border:1px solid var(--track);border-radius:999px;padding:8px 16px;font-size:13px;font-weight:600;pointer-events:none;opacity:0;transition:opacity .15s}
 .ptr.on{opacity:1}
+.bkrow{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:14px;background:var(--card2)}.bkrow.rev{border:1px solid var(--warn)}.bkt{display:flex;justify-content:space-between;gap:10px;align-items:baseline}.bkrow .qa .pillbtn{min-height:44px;padding:0 20px;font-size:15px}
 .tk{display:flex;flex-direction:column;align-items:center;gap:10px;padding:8px 0 4px;text-align:center}
 .tkbtn{background:none;border:0;color:inherit;font:inherit;display:flex;flex-direction:column;align-items:center;gap:6px;min-height:44px;padding:4px 16px;cursor:pointer}
 .tkl{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
@@ -1478,6 +1479,7 @@ window.LocalDB = (function(){
       </section>
       ${st && st.bills ? `<button type="button" class="mbill tkbill ${st.bills.ok ? "ok" : "bad"}" data-go="forecast" aria-label="${esc(st.bills.head)}. Tap for the 30-day forecast."><span class="bic">${st.bills.ok ? "✓" : "✕"}</span><span style="flex:1"><b>${esc(st.bills.head)}</b><span class="sub" style="display:block">${billSub}</span></span><span class="muted" aria-hidden="true">›</span></button>` : ""}
       ${loading ? "" : accountsCard()}
+      ${loading ? "" : bankInboxHTML()}
       ${loading ? "" : `<div class="tkacts"><button type="button" data-pace-afford>${IC.help}<span>Can I afford it?</span></button><button type="button" data-dash-log><span class="tkic" aria-hidden="true">🚗</span><span>DoorDash</span></button><button type="button" data-more-go><span class="tkic" aria-hidden="true">$</span><span>Paychecks</span></button></div>`}`;
     let more = `
       ${dd}
@@ -1583,6 +1585,7 @@ window.LocalDB = (function(){
       S.accounts = body; await S.db.doc("config/accounts").set(body);
       bankMsg("Synced " + new Date().toLocaleTimeString("en-US", {hour: "numeric", minute: "2-digit"}));
       render();
+      bankTxSync(manual);
     } catch (e){ bankMsg("Couldn't reach your bank: " + (e && e.message || "unknown error")); if (manual) toast("Bank sync failed"); }
     finally { bankBusy = false; }
   }
@@ -1604,6 +1607,169 @@ window.LocalDB = (function(){
     app.querySelectorAll("[data-bkmap]").forEach((sel) => sel.onchange = () => { const c = bankCfg() || {}; c.map = {...(c.map || {}), [sel.dataset.bkmap]: sel.value}; bankSet(c); bankMsg("Syncing..."); bankSync(true); });
     const off = document.getElementById("bkOff");
     if (off) off.onclick = async () => { try { localStorage.removeItem("rw_bank"); } catch (e){} if (S.accounts && S.accounts.bank){ const b = {...S.accounts, bank: false}; S.accounts = b; if (S.db) await S.db.doc("config/accounts").set(b); } S.bankStatus = ""; render(); };
+  }
+
+  // ---------------- bank transactions: auto-log what happens at the bank ----------------
+  let btBusy = false;
+  const mkey = (n) => String(n || "").toLowerCase().replace(/[^a-z\s&']/g, " ").replace(/\s+/g, " ").trim().split(" ").slice(0, 2).join(" ");
+  const GAS_RX = /shell|exxon|mobil|circle\s*k|wawa|\bbp\b|sunoco|speedway|chevron|marathon|murphy|valero|texaco|quiktrip|racetrac|sheetz|cumberland farms|7-eleven|fuel|gas\b/i;
+  const dayDiff = (a, b) => Math.abs((parseD(a) - parseD(b)) / 864e5);
+  async function bankTxSync(manual){
+    const cfg = bankCfg(); if (!cfg || !cfg.url || !cfg.key || !S.db || S.status !== "live" || !S.goalsLoaded || btBusy) return;
+    if (!S.accounts || !(S.accounts.bankAccts || []).length) return;
+    btBusy = true;
+    try {
+      let bt = S.bt || {since: ymd(new Date()), cursors: {}, rules: {}, inbox: [], ids: {}};
+      bt = {...bt, cursors: {...bt.cursors}, rules: {...bt.rules}, inbox: [...bt.inbox], ids: {...bt.ids}};
+      const r = await fetch(cfg.url.replace(/\/+$/, "") + "/api/sync", {method: "POST", headers: {"content-type": "application/json", "x-rosewood-key": cfg.key}, body: JSON.stringify({cursors: bt.cursors})});
+      const d = await r.json(); if (!r.ok) throw new Error(d.error || "Sync failed");
+      const roles = Object.fromEntries((S.accounts.bankAccts || []).map((a) => [a.id, a.role]));
+      let added = [], modified = [], removed = new Set();
+      for (const id in d.items){ const it = d.items[id]; added.push(...it.added); modified.push(...it.modified); it.removed.forEach((x) => removed.add(x)); }
+      const mon = {}, touched = new Set();
+      const getM = async (k) => { if (!mon[k]) mon[k] = [...(await loadMonth(k))]; return mon[k]; };
+      const findTx = async (id) => { for (const k of Object.keys(S.months).concat(Object.keys(mon))){ const l = await getM(k); const t = l.find((x) => x.id === id); if (t) return {k, t, l}; } return null; };
+      const goalEntries = {}; // goalId -> entries to add
+      const delGoalEntry = new Set();
+      const dflt = S.goals.find((g) => g.id === "g-emergency") || S.goals.find((g) => g.kind !== "dd");
+      const bills = cats().filter((c) => roleOf(c) === "bill");
+      const gasCat = cats().find((c) => /gas|transport/i.test(c.name || "")), funCat = cats().find((c) => roleOf(c) === "fun");
+      const now = new Date().toISOString(); let made = 0;
+      const inboxAdd = (x) => { bt.inbox = bt.inbox.filter((y) => y.id !== x.id); bt.inbox.push({...x, at: now}); };
+      const link = (id, kind, ref) => { bt.ids[id] = {kind, ...ref}; };
+      // 1) pending -> posted: move the link instead of making a new entry
+      for (const t of added.slice()){
+        if (t.pending_id && removed.has(t.pending_id) && bt.ids[t.pending_id]){
+          const lk = bt.ids[t.pending_id];
+          if (lk.kind === "tx"){ const f = await findTx(lk.ref); if (f){ f.t.bankId = t.id; f.t.date = t.date; f.t.amount = round2(Math.abs(t.amount)); touched.add(f.k); } }
+          bt.ids[t.id] = lk; delete bt.ids[t.pending_id]; removed.delete(t.pending_id);
+          bt.inbox = bt.inbox.map((y) => y.bankId === t.pending_id ? {...y, bankId: t.id, id: t.id} : y);
+          added = added.filter((x) => x.id !== t.id);
+        }
+      }
+      // 2) removed pending charges: take the entry back out
+      for (const id of removed){
+        const lk = bt.ids[id]; if (!lk) continue;
+        if (lk.kind === "tx"){ const f = await findTx(lk.ref); if (f && f.t.bankId === id){ const k = f.k; mon[k] = f.l.filter((x) => x.id !== lk.ref); touched.add(k); } }
+        if (lk.kind === "move") delGoalEntry.add(lk.ref);
+        delete bt.ids[id]; bt.inbox = bt.inbox.filter((y) => y.bankId !== id);
+      }
+      // 3) amount/date changes on things already logged
+      for (const t of modified){
+        const lk = bt.ids[t.id]; if (!lk || lk.kind !== "tx") continue;
+        const f = await findTx(lk.ref); if (f){ f.t.amount = round2(Math.abs(t.amount)); f.t.date = t.date; touched.add(f.k); }
+      }
+      // 4) new activity
+      const fresh = added.filter((t) => !bt.ids[t.id] && roles[t.account_id] && roles[t.account_id] !== "off").sort((a, b) => a.date.localeCompare(b.date));
+      const savTx = fresh.filter((t) => roles[t.account_id] === "sav");
+      const ddSplit = sideSplit();
+      for (const t of fresh){
+        if (t.date < bt.since){ bt.ids[t.id] = {kind: "skip"}; continue; }
+        const role = roles[t.account_id], amt = round2(Math.abs(t.amount)), out = t.amount > 0, name = t.name || "Bank activity", isXfer = /^TRANSFER/.test(t.category || "") || /transfer/i.test(t.raw || "");
+        if (role === "sav"){
+          if (/dividend|interest/i.test(t.raw || "") || /^INCOME_(DIVIDEND|INTEREST)/.test(t.category || "")){ bt.ids[t.id] = {kind: "skip"}; continue; }
+          if (!dflt){ bt.ids[t.id] = {kind: "skip"}; continue; }
+          const e = {id: uid(), date: t.date, amount: out ? -amt : amt, note: out ? "Moved out of savings (bank)" : "Moved into savings (bank)", ts: now, bankId: t.id};
+          (goalEntries[dflt.id] = goalEntries[dflt.id] || []).push(e);
+          link(t.id, "move", {ref: e.id, goal: dflt.id});
+          inboxAdd({id: t.id, bankId: t.id, kind: "move", title: out ? "Savings to checking" : "Checking to savings", amount: amt, entryId: e.id, goalId: dflt.id});
+          made++; continue;
+        }
+        if (isXfer && savTx.some((s) => Math.abs(Math.abs(s.amount) - amt) < 0.005 && (s.amount > 0) !== out && dayDiff(s.date, t.date) <= 3)){ bt.ids[t.id] = {kind: "skip"}; continue; }
+        const type = out ? "expense" : "income";
+        // already logged by hand or auto-posted? attach instead of duplicating
+        let hit = null;
+        for (const k of [t.date.slice(0, 7), ymd(addDays(parseD(t.date), -6)).slice(0, 7)]){
+          const l = await getM(k);
+          hit = l.find((x) => !x.bankId && x.type === type && (Math.abs(num(x.amount) - amt) < 0.005 ? dayDiff(x.date, t.date) <= 3 : x.auto && dayDiff(x.date, t.date) <= 6 && Math.abs(num(x.amount) - amt) <= Math.max(1.5, amt * 0.015)));
+          if (hit){ hit.bankId = t.id; if (hit.auto){ hit.amount = amt; hit.date = t.date; } touched.add(k); link(t.id, "tx", {ref: hit.id}); break; }
+        }
+        if (hit) continue;
+        const e = {id: uid(), date: t.date, amount: amt, type, categoryId: null, incomeId: null, note: name, ts: now, bankId: t.id, bank: true};
+        let review = false;
+        const key = mkey(name), rule = bt.rules[key];
+        if (type === "income"){
+          const incs = incomes(), byName = (rx) => incs.find((i) => rx.test(i.name || ""));
+          let inc = rule && rule.incomeId ? incs.find((i) => i.id === rule.incomeId) : null;
+          if (!inc && /dfas|afrotc|air force|usaf|treasury/i.test(t.raw || name)) inc = byName(/afrotc|stipend|air force/i);
+          if (!inc && /dick|sporting/i.test(t.raw || name)) inc = byName(/dick|sporting/i);
+          if (inc){ e.incomeId = inc.id; e.note = ""; }
+          else if (/door\s*dash/i.test(t.raw || name)){ e.note = "DoorDash"; e.pocket = t.date >= SPLIT_FROM ? round2(amt * ddSplit.pct / 100) : amt; }
+          else review = true;
+        } else {
+          let cat = null, tag = null;
+          if (rule && rule.cat){ cat = cats().find((c) => c.id === rule.cat); tag = rule.tag || null; }
+          if (!cat){
+            const bc = bills.filter((c) => Math.abs(num(c.budget) - amt) <= Math.max(1.5, num(c.budget) * 0.03));
+            if (bc.length === 1) cat = bc[0];
+          }
+          if (!cat && GAS_RX.test(t.raw || name)){ if (amt > 40 && gasCat) cat = gasCat; else if (funCat){ cat = funCat; tag = "random"; } }
+          if (!cat && funCat && /^FOOD_AND_DRINK_(RESTAURANT|FAST_FOOD|COFFEE|BEER)/.test(t.category || t.cat2 || "")){ cat = funCat; tag = "food"; }
+          if (!cat && funCat && /^FOOD_AND_DRINK$/.test(t.category || "")){ cat = funCat; tag = "food"; }
+          if (!cat && funCat){ cat = funCat; tag = "random"; review = true; }
+          if (cat){ e.categoryId = cat.id; if (tag && roleOf(cat) === "fun") e.tag = tag; }
+          else review = true;
+        }
+        const k = t.date.slice(0, 7); (await getM(k)).push(e); touched.add(k);
+        link(t.id, "tx", {ref: e.id}); made++;
+        inboxAdd({id: t.id, bankId: t.id, kind: type, title: name, amount: amt, entryId: e.id, review});
+      }
+      for (const k of touched){ S.months[k] = mon[k] || S.months[k]; await S.db.doc("months/" + k).set({tx: S.months[k]}); }
+      for (const gid in goalEntries){ const g = S.goals.find((x) => x.id === gid); if (g) await addGoalEntry(g, goalEntries[gid][0]); for (const e of goalEntries[gid].slice(1)){ const g2 = S.goals.find((x) => x.id === gid); await addGoalEntry(g2, e); } }
+      if (delGoalEntry.size) for (const g of S.goals){ if ((g.entries || []).some((e) => delGoalEntry.has(e.id))){ const body = {...g, entries: g.entries.filter((e) => !delGoalEntry.has(e.id))}; const id = body.id; delete body.id; await saveGoal(id, body); } }
+      for (const id in d.items) bt.cursors[id] = d.items[id].cursor;
+      bt.inbox = bt.inbox.slice(-40);
+      S.bt = bt; await S.db.doc("config/bankTx").set(bt);
+      if (made) toast(made + " new from your bank");
+      render();
+    } catch (e){ if (manual) toast("Couldn't read bank activity: " + (e && e.message || "error")); }
+    finally { btBusy = false; }
+  }
+  const btDismiss = async (id, undo) => {
+    const bt = S.bt; if (!bt) return; const it = bt.inbox.find((x) => x.id === id); if (!it) return;
+    if (undo){
+      if (it.kind === "move"){ const g = S.goals.find((x) => (x.entries || []).some((e) => e.id === it.entryId)); if (g){ const body = {...g, entries: g.entries.filter((e) => e.id !== it.entryId)}; const gid = body.id; delete body.id; await saveGoal(gid, body); } }
+      else { for (const k in S.months){ if (S.months[k].some((x) => x.id === it.entryId)){ S.months[k] = S.months[k].filter((x) => x.id !== it.entryId); await S.db.doc("months/" + k).set({tx: S.months[k]}); } } }
+      bt.ids[it.bankId] = {kind: "skip"};
+    }
+    S.bt = {...bt, inbox: bt.inbox.filter((x) => x.id !== id)}; await S.db.doc("config/bankTx").set(S.bt); render();
+  };
+  async function btChange(id, val){
+    const bt = S.bt; if (!bt) return; const it = bt.inbox.find((x) => x.id === id); if (!it) return;
+    if (it.kind === "move"){
+      const from = S.goals.find((x) => (x.entries || []).some((e) => e.id === it.entryId)), to = S.goals.find((x) => x.id === val);
+      if (from && to && from.id !== to.id){
+        const e = from.entries.find((x) => x.id === it.entryId);
+        const b1 = {...from, entries: from.entries.filter((x) => x.id !== it.entryId)}; const i1 = b1.id; delete b1.id; await saveGoal(i1, b1);
+        await addGoalEntry(to, e); it.goalId = to.id; bt.ids[it.bankId] = {kind: "move", ref: e.id, goal: to.id};
+      }
+    } else {
+      const [a, b] = val.split(":");
+      for (const k in S.months){ const t = S.months[k].find((x) => x.id === it.entryId); if (t){
+        if (it.kind === "income"){ t.incomeId = a === "inc" ? b : null; t.note = a === "inc" ? "" : t.note; }
+        else { t.categoryId = b; const c = catById(b); if (c && roleOf(c) === "fun") t.tag = a === "food" ? "food" : "random"; else delete t.tag; }
+        await S.db.doc("months/" + k).set({tx: S.months[k]});
+        const key = mkey(t.note || it.title); bt.rules = {...bt.rules, [key]: it.kind === "income" ? {incomeId: b} : {cat: b, tag: t.tag || null}};
+      } }
+    }
+    it.review = false; S.bt = {...bt}; await S.db.doc("config/bankTx").set(S.bt); render();
+  }
+  function bankInboxHTML(){
+    const bt = S.bt, list = bt ? bt.inbox : []; if (!list.length) return "";
+    const catOpts = (sel) => cats().filter((c) => c.group !== "Savings").flatMap((c) => roleOf(c) === "fun" ? [["food:" + c.id, c.name.trim() + " · ate out"], ["random:" + c.id, c.name.trim() + " · random"]] : [["c:" + c.id, c.name]]).map(([v, l]) => `<option value="${esc(v)}" ${v === sel ? "selected" : ""}>${esc(l)}</option>`).join("");
+    const rows = [...list].reverse().map((it) => {
+      let sel = "";
+      if (it.kind === "move") sel = `<select class="field" data-bt-sel="${esc(it.id)}" aria-label="Which goal">${S.goals.filter((g) => g.kind !== "dd").map((g) => `<option value="${esc(g.id)}" ${g.id === it.goalId ? "selected" : ""}>${esc(g.name)}</option>`).join("")}</select>`;
+      else {
+        let cur = "";
+        for (const k in S.months){ const t = S.months[k].find((x) => x.id === it.entryId); if (t){ cur = it.kind === "income" ? (t.incomeId ? "inc:" + t.incomeId : "oth:other") : ((roleOf(catById(t.categoryId) || {}) === "fun") ? (t.tag === "food" ? "food:" : "random:") + t.categoryId : "c:" + t.categoryId); } }
+        sel = it.kind === "income" ? `<select class="field" data-bt-sel="${esc(it.id)}" aria-label="Paid by"><option value="oth:other" ${cur === "oth:other" ? "selected" : ""}>Other income</option>${incomes().map((i) => `<option value="inc:${esc(i.id)}" ${cur === "inc:" + i.id ? "selected" : ""}>${esc(i.name)}</option>`).join("")}</select>` : `<select class="field" data-bt-sel="${esc(it.id)}" aria-label="Category">${catOpts(cur)}</select>`;
+      }
+      const sign = it.kind === "income" || (it.kind === "move" && /^Checking/.test(it.title)) ? "+" : "−";
+      return `<div class="bkrow ${it.review ? "rev" : ""}"><div class="bkt"><span class="t1">${esc(it.title)}</span><b>${it.kind === "income" ? "+" : "−"}${money(it.amount)}</b></div>${it.review ? '<span class="sub">Pick the right category and Rosewood will remember it.</span>' : ""}${sel}<div class="qa" style="display:flex;gap:8px"><button type="button" class="pillbtn" data-bt-ok="${esc(it.id)}">OK</button><button type="button" class="pillbtn ghost" data-bt-undo="${esc(it.id)}">Undo</button></div></div>`;
+    }).join("");
+    const needs = list.filter((x) => x.review).length;
+    return `<details class="card more" data-btbox ${S.btOpen || needs ? "open" : ""}><summary><span class="stxt">New from bank (${list.length})</span><span class="sub">${needs ? needs + " need a category" : "Added automatically. Tap to review."}</span></summary><div class="morebody">${rows}</div></details>`;
   }
   function openAccounts(){
     const a = S.accounts || {};
@@ -2635,6 +2801,8 @@ window.LocalDB = (function(){
       try { localStorage.setItem("fd_paper", v); } catch (e){ toast("Couldn't save the link on this phone."); return; }
       paperSig = ""; paperSend(true); render(); return;
     }
+    if ((el = t("[data-bt-ok]"))){ btDismiss(el.dataset.btOk, false); return; }
+    if ((el = t("[data-bt-undo]"))){ if (confirm("Remove this entry?")) btDismiss(el.dataset.btUndo, true); return; }
     if ((el = t("[data-pace-afford]"))){ openPace(true); return; }
     if ((el = t("[data-pace]"))){ openPace(false); return; }
     if ((el = t("[data-more-go]"))){ S.moreOpen = true; render(); const ps = document.getElementById("paysec"); if (ps) ps.scrollIntoView({block: "start"}); return; }
@@ -2712,9 +2880,9 @@ window.LocalDB = (function(){
     if (cr){ const c = draft.categories.find((x) => x.id === cr.dataset.cat); if (c) c[f] = e.target.value; }
     queueSave();
   };
-  app.addEventListener("toggle", (e) => { const d = e.target; if (d && d.matches && d.matches("details[data-dd]")) S.ddOpen = d.open; if (d && d.matches && d.matches("details[data-wk]")) S.wkOpen = d.open; if (d && d.matches && d.matches("details[data-more]")) S.moreOpen = d.open; }, true);
+  app.addEventListener("toggle", (e) => { const d = e.target; if (d && d.matches && d.matches("details[data-dd]")) S.ddOpen = d.open; if (d && d.matches && d.matches("details[data-wk]")) S.wkOpen = d.open; if (d && d.matches && d.matches("details[data-more]")) S.moreOpen = d.open; if (d && d.matches && d.matches("details[data-btbox]")) S.btOpen = d.open; }, true);
   app.addEventListener("input", onEdit);
-  app.addEventListener("change", (e) => { if (e.target.tagName === "SELECT") onEdit(e); else if (e.target.id === "coverOver" && draft){ draft.coverOver = e.target.checked; queueSave(); } else if (e.target.id === "autoBillsOn" && S.db){ const on = e.target.checked; S.auto = {since: ymd(new Date(new Date().getFullYear(), new Date().getMonth(), 1)), posted: {}, ...(S.auto || {}), on}; S.db.doc("config/autobills").set(S.auto); if (on) runAutoBills(); } });
+  app.addEventListener("change", (e) => { if (e.target.dataset && e.target.dataset.btSel){ btChange(e.target.dataset.btSel, e.target.value); return; } if (e.target.tagName === "SELECT") onEdit(e); else if (e.target.id === "coverOver" && draft){ draft.coverOver = e.target.checked; queueSave(); } else if (e.target.id === "autoBillsOn" && S.db){ const on = e.target.checked; S.auto = {since: ymd(new Date(new Date().getFullYear(), new Date().getMonth(), 1)), posted: {}, ...(S.auto || {}), on}; S.db.doc("config/autobills").set(S.auto); if (on) runAutoBills(); } });
 
   let toastTimer;
   function toast(msg, action){
@@ -2806,6 +2974,10 @@ window.LocalDB = (function(){
     }, () => {});
     db.doc("config/accounts").onSnapshot((snap) => {
       S.accounts = snap.exists ? JSON.parse(JSON.stringify(snap.data())) : null;
+      if (S.tab !== "plan") render();
+    }, () => {});
+    db.doc("config/bankTx").onSnapshot((snap) => {
+      S.bt = snap.exists ? JSON.parse(JSON.stringify(snap.data())) : null;
       if (S.tab !== "plan") render();
     }, () => {});
     db.doc("config/dashlog").onSnapshot((snap) => {
