@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Rosewood</title>
 <script>try{var _t=localStorage.getItem("mb-theme");document.documentElement.setAttribute("data-theme",_t==="classic"||_t==="pro"?_t:"sl")}catch(e){document.documentElement.setAttribute("data-theme","sl")}</script>
-<meta name="mb-build" content="1794008024">
+<meta name="mb-build" content="1794008279">
 <script>
 /* Auto-update: on open and on return to the app, check GitHub for a newer build and reload into it.
    Skips while a sheet is open so it never interrupts you mid-entry. */
-(function(){var B="1794008024";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
+(function(){var B="1794008279";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
 function chk(){fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){var m=t.match(/name="mb-build" content="(\d+)"/);if(!m||m[1]===B||Number(m[1])<Number(B))return;if(busy())return;try{if(sessionStorage.getItem("mb_rl")===m[1])return;sessionStorage.setItem("mb_rl",m[1])}catch(e){}location.replace(location.pathname+"?v="+m[1])}).catch(function(){})}
 window.addEventListener("load",function(){setTimeout(chk,1500)});document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();
 </script>
@@ -1556,7 +1556,7 @@ window.LocalDB = (function(){
       const chk = dep.filter((a) => role(a) === "chk"), sav = dep.filter((a) => role(a) === "sav");
       if (!chk.length) throw new Error("No checking account came back from your bank.");
       const sum = (l, f) => round2(l.reduce((t, a) => t + num(f(a)), 0));
-      const body = {...(S.accounts || {}), checking: sum(chk, (a) => a.available != null ? a.available : a.current), savings: sav.length ? sum(sav, (a) => a.current) : (S.accounts && S.accounts.savings != null ? S.accounts.savings : null), asOf: new Date().toISOString(), bank: true, bankAt: d.at, bankAccts: dep.map((a) => ({id: a.account_id, name: ((a.official_name || a.name || "Account") + (a.mask ? " ..." + a.mask : "")), sub: a.subtype, cur: a.current, avail: a.available, role: role(a)}))};
+      const body = {...(S.accounts || {}), checking: sum(chk, (a) => a.available != null ? a.available : a.current), savings: sav.length ? sum(sav, (a) => a.available != null ? a.available : a.current) : (S.accounts && S.accounts.savings != null ? S.accounts.savings : null), asOf: new Date().toISOString(), bank: true, bankAt: d.at, bankAccts: dep.map((a) => ({id: a.account_id, name: ((a.official_name || a.name || "Account") + (a.mask ? " ..." + a.mask : "")), sub: a.subtype, cur: a.current, avail: a.available, role: role(a)}))};
       S.accounts = body; await S.db.doc("config/accounts").set(body);
       bankMsg("Synced " + new Date().toLocaleTimeString("en-US", {hour: "numeric", minute: "2-digit"}));
       render();
