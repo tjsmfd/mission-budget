@@ -21,7 +21,7 @@ The app saves a copy of your data inside itself once a week (kept for 8 weeks, s
 - Goals can have an exact date, a first checkpoint, and be marked "DoorDash funds this".
 - Log a dash (earned, miles, hours) on Today. Gas is miles / mpg x price (Fusion mpg and gas price are editable). The net after gas counts toward the goal, and the card says how much to earn or how many hours to dash. If you fall behind, it offers to move the gap from pocket money, only with your OK.
 
-Last updated: Nov 5, 2026 · 11:49 AM ET.
+Last updated: Nov 6, 2026 · 5:31 PM ET.
 
 If an update doesn't show: give GitHub about a minute, then fully close and reopen the app once.
 
@@ -61,3 +61,6 @@ On the due day of each bill and subscription (and any day after, if you didn't o
 
 ## Moving savings to checking
 Today → Accounts → **Move money** (or Goals → a goal → **Take money out**) moves money out of a savings goal. By default it lands in your checking: checking goes up, savings and the goal go down, and it shows in History. Choose "Spent from savings" if you paid for something straight from savings (checking doesn't change).
+
+## Today, three questions (Nov 2026)
+Today now shows one big pocket-money number with a short status chip (On pace / Over pace / Pocket money used up / Bill at risk), a tappable "Bills covered" row, Accounts, and three shortcuts (Can I afford it?, DoorDash, Paychecks). Tap the number for pace per day/week/month, a 7-day spending chart and Can I afford it. Everything else (DoorDash, paychecks, categories) lives under "Budget details". Tapping a History purchase opens a read-only details sheet; Edit and Delete are behind the ••• button.

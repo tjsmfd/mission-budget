@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Rosewood</title>
 <script>try{var _t=localStorage.getItem("mb-theme");document.documentElement.setAttribute("data-theme",_t==="classic"||_t==="pro"?_t:"sl")}catch(e){document.documentElement.setAttribute("data-theme","sl")}</script>
-<meta name="mb-build" content="1793897379">
+<meta name="mb-build" content="1794004265">
 <script>
 /* Auto-update: on open and on return to the app, check GitHub for a newer build and reload into it.
    Skips while a sheet is open so it never interrupts you mid-entry. */
-(function(){var B="1793897379";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
+(function(){var B="1794004265";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
 function chk(){fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){var m=t.match(/name="mb-build" content="(\d+)"/);if(!m||m[1]===B||Number(m[1])<Number(B))return;if(busy())return;try{if(sessionStorage.getItem("mb_rl")===m[1])return;sessionStorage.setItem("mb_rl",m[1])}catch(e){}location.replace(location.pathname+"?v="+m[1])}).catch(function(){})}
 window.addEventListener("load",function(){setTimeout(chk,1500)});document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();
 </script>
@@ -393,6 +393,31 @@ html[data-theme="sl"] .tab[aria-current="page"]::after{content:"";position:absol
 .verdict.ok{background:var(--ok-tint)}.verdict.mid{background:var(--warn-tint)}.verdict.bad{background:var(--red-tint)}
 /* ===== Cash plan: bills line + three separate warning levels ===== */
 .hero .big.pace{color:var(--accent)}.hero .big.amb{color:var(--warn)}
+.emptycard{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;padding:20px;border-radius:20px;background:var(--card)}.emptycard b{font-size:17px}.emptycard .pillbtn{margin-top:6px;min-height:44px;padding:0 22px;font-size:15px}
+.dtTop{text-align:center;display:flex;flex-direction:column;gap:6px}.dtBig{font-family:var(--serif,"Fraunces",Georgia,serif);font-size:48px;font-weight:600;line-height:1}.dtRows{border-radius:18px;background:var(--card2);overflow:hidden}.dtRows div{display:flex;justify-content:space-between;gap:12px;padding:13px 16px;min-height:44px;box-sizing:border-box;align-items:center;font-size:16px}.dtRows div+div{border-top:1px solid var(--track)}.dtRows span:first-child{color:var(--muted)}.dtMenu{display:flex;flex-direction:column;border-radius:16px;background:var(--card2);overflow:hidden}.dtMenu button{min-height:48px;background:none;border:0;color:var(--fg);font:inherit;font-size:16px;text-align:left;padding:0 16px}.dtMenu button+button{border-top:1px solid var(--track)}.dtMenu .del{color:var(--red)}
+.tk{display:flex;flex-direction:column;align-items:center;gap:10px;padding:8px 0 4px;text-align:center}
+.tkbtn{background:none;border:0;color:inherit;font:inherit;display:flex;flex-direction:column;align-items:center;gap:6px;min-height:44px;padding:4px 16px;cursor:pointer}
+.tkl{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+.tkbig{font-family:var(--serif,"Fraunces",Georgia,serif);font-weight:600;font-size:84px;line-height:1;color:var(--fg);font-variant-numeric:tabular-nums}
+.tkbig.pace{color:var(--accent)}.tkbig.amb{color:var(--warn)}.tkbig.neg{color:var(--red)}
+.tkchip{display:inline-flex;align-items:center;gap:8px;padding:8px 16px 8px 10px;border-radius:999px;font-size:15px;font-weight:700;border:1px solid transparent}
+.tkchip .ic{width:20px;height:20px;display:grid;place-items:center;font-size:12px;font-weight:800}
+.tkchip.lv0{background:var(--ok-tint);border-color:rgba(111,211,154,.4)}.tkchip.lv0 .ic{border-radius:50%;background:var(--ok);color:#10261A}
+.tkchip.lv1{background:rgba(217,183,122,.10);border-color:rgba(217,183,122,.45);color:var(--accent)}.tkchip.lv1 .ic{border-radius:50%;background:var(--accent);color:#2A1704}
+.tkchip.lv2{background:var(--warn-tint);border-color:var(--warn);color:var(--warn)}.tkchip.lv2 .ic{border-radius:6px;background:var(--warn);color:#2A1D04}
+.tkchip.lv3{background:rgba(240,103,91,.18);border-color:var(--red);color:var(--red)}.tkchip.lv3 .ic{border-radius:6px;background:var(--red);color:#2A0C09}
+.tkchip.lvstale{background:var(--card2)}.tkchip.lvstale .ic{border-radius:50%;background:var(--muted);color:var(--bg)}
+.tksub{font-size:14px;color:var(--muted);max-width:320px;line-height:1.4}
+.tkbill{width:100%;min-height:44px;border:0;color:inherit;font:inherit;text-align:left;align-items:center;cursor:pointer}
+.tkacts{display:flex;gap:10px}
+.tkacts button{flex:1;min-height:72px;border:0;border-radius:16px;background:var(--card2);color:var(--fg);font:inherit;font-size:13px;font-weight:600;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer}
+.tkacts svg{width:22px;height:22px;color:var(--accent)}.tkacts .tkic{font-size:20px;line-height:22px;color:var(--accent)}
+.more>summary{min-height:44px;display:flex;flex-direction:column;justify-content:center;gap:2px;cursor:pointer}
+.more .morebody{display:flex;flex-direction:column;gap:14px;margin-top:14px}
+.pcTop{display:flex;justify-content:space-between;align-items:baseline}.pcBig{font-family:var(--serif,"Fraunces",Georgia,serif);font-size:34px;font-weight:600}
+.pcTiles{display:flex;gap:8px}.pcTiles div{flex:1;background:var(--card2);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:2px}.pcTiles span{font-size:12px;color:var(--muted)}.pcTiles b{font-size:20px}
+.pcBars{display:flex;align-items:flex-end;gap:5px;height:56px}.pcBars i{flex:1;background:var(--accent);border-radius:4px}.pcBars i.now{opacity:.55}
+.pcDays{display:flex;gap:5px;margin-top:6px;font-size:11px;color:var(--muted);text-align:center}.pcDays span{flex:1}.pcDays .now{color:var(--accent);font-weight:700}
 .mbill{display:flex;gap:10px;align-items:flex-start;padding:11px 13px;border-radius:14px;font-size:14px;line-height:1.4;background:var(--ok-tint)}
 .mbill.bad{background:var(--red-tint)}
 .mbill b{display:block}
@@ -1323,6 +1348,63 @@ window.LocalDB = (function(){
     if (lg) lg.onclick = () => { const a = S.pkVerdict, fun = cats().find((c) => roleOf(c) === "fun"); S.pkVerdict = 0; S.pkDraft = ""; openLog(fun ? fun.id : null); const amt = document.getElementById("amt"); if (amt){ amt.value = a; amt.dispatchEvent(new Event("input")); } };
   }
 
+  function openTxDetails(tx, k){
+    const c = catById(tx.categoryId), inc = tx.type === "income", src = inc ? incById(tx.incomeId) : null;
+    const title = inc ? (src ? src.name : "Income") : (c ? c.name : "Deleted category");
+    const amt = Math.abs(num(tx.amount)), tr = accountTrail()[tx.id];
+    const fun = c && roleOf(c) === "fun";
+    const rows = [["Date", prettyDate(tx.date, {weekday: "short", month: "short", day: "numeric"})], [inc ? "Paid by" : "Category", title],
+      ...(tx.tag ? [["Kind", tx.tag === "food" ? "Ate out" : "Random"]] : []),
+      ...(tx.note ? [["Note", tx.note]] : []),
+      ...(fun ? [["Effect", "Pocket money −" + money(amt)]] : num(tx.pocket) > 0 ? [["Effect", "Pocket money −" + money(num(tx.pocket))]] : []),
+      ...(tr ? [["Checking", money(tr.chk[0]) + " → " + money(tr.chk[1])]] : []),
+      ...((tx.edits || []).length ? [["History", "Edited " + tx.edits.length + (tx.edits.length === 1 ? " time" : " times")]] : [])];
+    const {close, el} = sheet(inc ? "Paycheck" : "Purchase", `
+      <div class="dtTop"><b class="dtBig">${inc ? "+" : "−"}${money(amt)}</b><span style="font-size:18px;font-weight:600">${esc(title)}</span></div>
+      <div class="dtRows">${rows.map(([a, b]) => `<div><span>${esc(a)}</span><span style="text-align:right">${esc(b)}</span></div>`).join("")}</div>
+      <div style="display:flex;gap:10px"><button type="button" class="save" id="dtDone" style="flex:1">Done</button><button type="button" class="iconbtn" id="dtMore" aria-label="More actions" style="width:52px;height:52px;flex:none"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></div>
+      <div id="dtMenuBox"></div>`);
+    el.querySelector("#dtDone").onclick = close;
+    el.querySelector("#dtMore").onclick = () => {
+      const box = el.querySelector("#dtMenuBox");
+      if (box.innerHTML){ box.innerHTML = ""; return; }
+      box.innerHTML = '<div class="dtMenu"><button type="button" id="dtEdit">Edit entry</button><button type="button" class="del" id="dtDel">Delete entry</button></div>';
+      box.querySelector("#dtEdit").onclick = () => { close(); openLog(null, tx); };
+      box.querySelector("#dtDel").onclick = () => { if (confirm("Delete this entry? This can't be undone.")){ close(); deleteTx(k, tx.id); } };
+    };
+  }
+  function openPace(focus){
+    const m = monthStats(monthKey(new Date())), fc = freshFc(), pn = pocketNow(m, fc);
+    if (!pn){ toast("Mark a category as Pocket money in Plan first."); return; }
+    const budget = m.funBudget + (m.pocketExtra || 0);
+    const funIds = new Set(cats().filter((c) => roleOf(c) === "fun").map((c) => c.id));
+    const days = []; for (let i = 6; i >= 0; i--){ const d = addDays(todayStart(), -i), key = ymd(d); let v = 0; for (const t of m.tx) if (t.type !== "income" && funIds.has(t.categoryId) && t.date === key) v += num(t.amount); days.push({d, v}); }
+    const mx = Math.max(1, ...days.map((x) => x.v));
+    const {close, el} = sheet("Pocket money", `
+      <div class="pcTop"><span class="sub">Left to spend now</span><b class="pcBig">${money(pn.avail)}</b></div>
+      <div class="pcTiles"><div><span>Per day</span><b>${money(pn.r, 0)}</b></div><div><span>Per week</span><b>${money(pn.W, 0)}</b></div><div><span>Month budget</span><b>${money(budget, 0)}</b></div></div>
+      <div><div class="pcBars" aria-label="Pocket spending, last 7 days">${days.map((x, i) => `<i class="${i === 6 ? "now" : ""}" style="height:${Math.max(6, x.v / mx * 100)}%" title="${money(x.v)}"></i>`).join("")}</div><div class="pcDays">${days.map((x, i) => `<span class="${i === 6 ? "now" : ""}">${i === 6 ? "Today" : "SMTWTFS"[x.d.getDay()]}</span>`).join("")}</div></div>
+      <div class="pchk"><span class="l2" style="font-weight:700;font-size:17px">Can I afford it?</span>
+        <input class="field num" id="pvQ" inputmode="decimal" autocomplete="off" enterkeyhint="done" placeholder="$0.00" aria-label="Price of purchase">
+        <div id="pvOut"></div>
+        <div class="qa"><button type="button" class="pillbtn" id="pvCheck">Check</button><span id="pvLogWrap"></span></div></div>
+      <details class="dd"><summary><span class="stxt">How is this figured?</span></summary><div class="ddbody"><span class="sub">Your pocket budget (${money(budget, 0)}) is spread evenly over the month, so it grows ${money(pn.r)} a day. Pocket purchases and overspending covered from pocket money come off it. If checking can't spare that much after bills, the smaller number shows.</span></div></details>`);
+    const q = el.querySelector("#pvQ"), out = el.querySelector("#pvOut"), lw = el.querySelector("#pvLogWrap");
+    const run = () => {
+      const a = round2(num(q.value)); lw.innerHTML = "";
+      const v = a > 0 ? pocketVerdict2(pn, fc, a) : null;
+      out.innerHTML = v ? `<div class="verdict ${v.t}" role="status"><b>${esc(v.h)}</b>${v.p}</div>` : "";
+      if (v && v.t !== "bad"){
+        lw.innerHTML = '<button type="button" class="pillbtn ghost" id="pvLog">Log it</button>';
+        el.querySelector("#pvLog").onclick = () => { const fun = cats().find((c) => roleOf(c) === "fun"); close(); openLog(fun ? fun.id : null); const amt = document.getElementById("amt"); if (amt){ amt.value = a; amt.dispatchEvent(new Event("input")); } };
+      }
+    };
+    q.oninput = () => { out.innerHTML = ""; lw.innerHTML = ""; };
+    q.onkeydown = (e) => { if (e.key === "Enter"){ e.preventDefault(); run(); } };
+    el.querySelector("#pvCheck").onclick = run;
+    if (focus) setTimeout(() => q.focus(), 60);
+  }
+
   function renderToday(){
     const now = new Date(), k = monthKey(now), loading = S.status === "loading";
     const m = monthStats(k);
@@ -1350,23 +1432,31 @@ window.LocalDB = (function(){
     else if (!pn) heroSub = "Mark a category as Pocket money in Plan";
     else if (pn.H < 0) heroSub = `Over your pace by ${money(-pn.H)} · back on pace ${dfmt(fitDate(pn, fc, 0.01) || todayStart())}`;
     else heroSub = `Pace ${money(pn.W, 0)}/week · grows ${money(pn.r)}/day` + (pn.cash !== null && pn.cash < pn.H - 0.5 ? ` · ${money(pn.H - pn.cash)} held back for bills` : "");
+    const chipTxt = !st ? "" : {0: "On pace", 1: "Over pace", 2: "Pocket money used up", 3: "Bill at risk", stale: "Update your balance"}[st.lvl];
+    let chipSub = "";
+    if (st && pn){
+      if (st.lvl === 0) chipSub = `${money(pn.W, 0)} a week · ${money(pn.r, 0)} a day`;
+      else if (st.lvl === 1) chipSub = `Back on pace ${dfmt(fitDate(pn, fc, 0.01) || todayStart())}`;
+      else if (st.lvl === 2){ const np = nextPayD(fc); chipSub = `Bills are fine. ${np ? "Refills " + dfmt(np) : "Hold off for now"}`; }
+      else chipSub = st.text;
+    } else if (st) chipSub = st.text;
+    const chipIc = {0: "✓", 1: "↑", 2: "!", 3: "✕", stale: "↻"}[st ? st.lvl : 0];
+    const billSub = st && st.bills ? st.bills.sub.replace(/^Through [^.]+\.\s*/, "") : "";
     let html = `
       <div class="headrow"><div class="head"><span class="date">${esc(now.toLocaleString("en-US", {weekday: "long", month: "short", day: "numeric"}))}</span><h1>${greeting()}</h1></div>${helpBtn()}</div>
       ${loading ? "" : notices() + lastLoggedNotice(m)}
-      <section class="card" aria-label="Free to spend" style="display:flex;flex-direction:column;gap:12px">
-        <div class="hero">
-          ${ringSVG(p, !st || st.lvl < 3)}
-          <div class="txt">
-            <span class="sub" style="font-size:14px">Pocket money to spend now</span>
-            <span class="big ${pn && pn.avail < 0 ? (st && st.lvl === 3 ? "neg" : st && st.lvl === 2 ? "amb" : "pace") : ""}">${heroBig}</span>
-            <span class="sub">${esc(heroSub)}</span>
-          </div>
-        </div>
-        ${banner}
-        ${dd}
+      <section class="tk" aria-label="Pocket money">
+        <button type="button" class="tkbtn" data-pace aria-label="Pocket money ${esc(heroBig)}. Tap for details.">
+          <span class="tkl">Pocket money</span>
+          <span class="tkbig ${pn && pn.avail < 0 ? (st && st.lvl === 3 ? "neg" : st && st.lvl === 2 ? "amb" : "pace") : ""}">${heroBig}</span>
+        </button>
+        ${st ? `<span class="tkchip lv${st.lvl}" role="status"><span class="ic" aria-hidden="true">${chipIc}</span>${chipTxt}</span><span class="tksub">${chipSub}</span>` : `<span class="tksub">${esc(heroSub)}</span>`}
       </section>
+      ${st && st.bills ? `<button type="button" class="mbill tkbill ${st.bills.ok ? "ok" : "bad"}" data-go="forecast" aria-label="${esc(st.bills.head)}. Tap for the 30-day forecast."><span class="bic">${st.bills.ok ? "✓" : "✕"}</span><span style="flex:1"><b>${esc(st.bills.head)}</b><span class="sub" style="display:block">${billSub}</span></span><span class="muted" aria-hidden="true">›</span></button>` : ""}
       ${loading ? "" : accountsCard()}
-      ${pn ? pocketCheckHTML(pn, fc) : ""}
+      ${loading ? "" : `<div class="tkacts"><button type="button" data-pace-afford>${IC.help}<span>Can I afford it?</span></button><button type="button" data-dash-log><span class="tkic" aria-hidden="true">🚗</span><span>DoorDash</span></button><button type="button" data-more-go><span class="tkic" aria-hidden="true">$</span><span>Paychecks</span></button></div>`}`;
+    let more = `
+      ${dd}
       ${loading ? "" : dashCardHTML()}
       ${loading ? "" : doorDashCard(m, fc, k)}
       ${fc && (fc.missing.length || fc.paysMissing.length) ? `<div class="notice soft"><span>Your forecast is missing ${esc([...fc.missing.map((x) => x + " due day"), ...fc.paysMissing.map((x) => x + " payday")].join(", "))}. Add it in Plan so Free to spend is accurate.</span><button type="button" data-go="plan">Plan</button></div>` : ""}
@@ -1377,17 +1467,17 @@ window.LocalDB = (function(){
       </div>`;
     if (!loading){
       const ip = exp ? Math.min(100, (m.incomeIn / exp) * 100) : 0;
-      html += `<section class="card" aria-label="Paychecks this month" style="display:flex;flex-direction:column;gap:10px">
+      more += `<section class="card" id="paysec" aria-label="Paychecks this month" style="display:flex;flex-direction:column;gap:10px">
         <div class="l1"><h2>Paychecks this month</h2><span class="amt">${money(m.incomeIn, 0)}<span class="muted" style="font-weight:500;font-size:13px"> of ~${money(exp, 0)}</span></span></div>
         <div class="bar" style="--gc:var(--ok)"><i style="width:${ip}%"></i></div>
         <div>${incomes().map((i) => `<div class="srcrow"><span>${esc(i.name || "Income")}</span><span class="r">${money(m.bySource[i.id] || 0, 0)} in · ${i.kind === "varies" ? "~" : ""}${money(num(i.amount) * (FREQ[i.freq] || FREQ.monthly)[1], 0)}/mo</span></div>`).join("")}${m.bySource.other ? `<div class="srcrow"><span>Other</span><span class="r">${money(m.bySource.other, 0)} in</span></div>` : ""}</div>
         <p class="sub" style="margin:0">${m.cash >= 0 ? `Unassigned cash from this month: <b style="color:var(--fg)">${money(m.cash)}</b> (paid in, minus spending and goal money).` : `<span style="color:var(--red)">You've spent ${money(-m.cash)} more than you've been paid this month.</span> Fine if it's coming from last month's money; watch it if not.`}</p>
       </section>`;
-      html += `<div class="sechead"><h2>Categories</h2><span>left this month</span></div>`;
+      more += `<div class="sechead"><h2>Categories</h2><span>left this month</span></div>`;
       for (const g of GROUPS){
         const list = cats().filter((c) => c.group === g);
         if (!list.length) continue;
-        html += `<div class="gtitle"><span class="dot" style="--gc:${GC[g]}"></span>${g}</div><div class="list">`;
+        more += `<div class="gtitle"><span class="dot" style="--gc:${GC[g]}"></span>${g}</div><div class="list">`;
         for (const c of list){
           const isFun = roleOf(c) === "fun", firstFun = isFun && cats().find((x) => roleOf(x) === "fun") === c;
           const covered = firstFun ? m.funCover : 0;
@@ -1410,17 +1500,17 @@ window.LocalDB = (function(){
           if (ov && !billPaid) meta += ` · <span style="color:var(--red)">${money(ov.amount)} over</span>`;
           if (ov && m.coverOver) meta += ` · <span style="color:var(--warn)">taken from pocket money</span>`;
           if (covered > 0) meta += ` · <span style="color:var(--warn)">−${money(covered)} covering overspending</span>`;
-          html += `<button type="button" class="catrow" data-log="${esc(c.id)}" aria-label="${esc(c.name)}: ${esc(amtTxt)}. Tap to log.">
+          more += `<button type="button" class="catrow" data-log="${esc(c.id)}" aria-label="${esc(c.name)}: ${esc(amtTxt)}. Tap to log.">
             <span class="l1"><span class="name"><span class="dot" style="--gc:${GC[g]}"></span><span>${esc(c.name)}</span></span><span class="amt ${amtCls}">${amtTxt}</span></span>
             <span class="bar" style="--gc:${GC[g]}"><i class="${cls}" style="width:${Math.min(100, q * 100)}%"></i></span>
             <span class="meta">${meta}</span></button>`;
         }
-        html += "</div>";
+        more += "</div>";
       }
-      html += '<p class="foot">Tap a category to log a purchase in it</p>';
+      more += '<p class="foot">Tap a category to log a purchase in it</p>';
     }
+    if (!loading) html += `<details class="card more" data-more ${S.moreOpen ? "open" : ""}><summary><span class="stxt">Budget details</span><span class="sub">DoorDash, paychecks, categories</span></summary><div class="morebody">${more}</div></details>`;
     app.innerHTML = html;
-    wirePocket(pn);
   }
 
   // ---------------- accounts ----------------
@@ -1534,7 +1624,7 @@ window.LocalDB = (function(){
         ${accountsLine(total)}
       </section>`;
     if (!S.goalsLoaded && S.status !== "offline") html += '<p class="empty">Loading your goals…</p>';
-    else if (!S.goals.length) html += '<p class="empty">No goals yet. Add the thing you\'re saving for, how much it costs, and when you want it.</p>';
+    else if (!S.goals.length) html += '<div class="emptycard"><b>No goals yet</b><span class="sub">Pick something to save toward: what it costs and when you want it.</span></div>';
     for (const g of S.goals){
       const bal = goalBalance(g), target = g.kind === "setaside" ? 0 : num(g.target);
       const pct = target > 0 ? Math.min(100, (bal / target) * 100) : 0;
@@ -1687,7 +1777,7 @@ window.LocalDB = (function(){
       </div>
       <button type="button" class="pillbtn ghost" data-review="${esc(k)}" style="align-self:flex-start">Month review</button>`;
     if (!loaded) html += '<p class="empty">Loading…</p>';
-    else if (!rows.length) html += '<p class="empty">Nothing logged this month yet. Tap the + button to log a purchase or paycheck.</p>';
+    else if (!rows.length) html += '<div class="emptycard"><b>No purchases yet</b><span class="sub">Log one and it shows up here.</span><button type="button" class="pillbtn" data-log-new>Log a purchase</button></div>';
     else {
       let day = "", open = false;
       for (const t of rows){
@@ -2475,6 +2565,9 @@ window.LocalDB = (function(){
       try { localStorage.setItem("fd_paper", v); } catch (e){ toast("Couldn't save the link on this phone."); return; }
       paperSig = ""; paperSend(true); render(); return;
     }
+    if ((el = t("[data-pace-afford]"))){ openPace(true); return; }
+    if ((el = t("[data-pace]"))){ openPace(false); return; }
+    if ((el = t("[data-more-go]"))){ S.moreOpen = true; render(); const ps = document.getElementById("paysec"); if (ps) ps.scrollIntoView({block: "start"}); return; }
     if ((el = t("[data-dash-log]"))){ openDashLog(); return; }
     if ((el = t("[data-dash-gas]"))){ openDashGas(); return; }
     if ((el = t("[data-dash-del]"))){ dashDelete(el.dataset.dashDel); return; }
@@ -2519,7 +2612,8 @@ window.LocalDB = (function(){
       if (S.db) S.db.doc("config/plan").set(body).then(() => toast("Subscriptions budget set to " + money(total)), () => toast("Couldn't save. Try again."));
       return;
     }
-    if ((el = t("[data-edit-tx]"))){ const tx = (S.months[el.dataset.month] || []).find((x) => x.id === el.dataset.editTx); if (tx) openLog(null, tx); return; }
+    if ((el = t("[data-log-new]"))){ openLog(null); return; }
+    if ((el = t("[data-edit-tx]"))){ const tx = (S.months[el.dataset.month] || []).find((x) => x.id === el.dataset.editTx); if (tx) openTxDetails(tx, el.dataset.month); return; }
     if ((el = t("[data-edit-entry]"))){ openEntryEdit(el.dataset.goal, el.dataset.editEntry); return; }
     if ((el = t("[data-goal-edit]"))){ openGoalEdit(S.goals.find((g) => g.id === el.dataset.goalEdit)); return; }
     if ((el = t("[data-acc-move]"))){
@@ -2548,7 +2642,7 @@ window.LocalDB = (function(){
     if (cr){ const c = draft.categories.find((x) => x.id === cr.dataset.cat); if (c) c[f] = e.target.value; }
     queueSave();
   };
-  app.addEventListener("toggle", (e) => { const d = e.target; if (d && d.matches && d.matches("details[data-dd]")) S.ddOpen = d.open; if (d && d.matches && d.matches("details[data-wk]")) S.wkOpen = d.open; }, true);
+  app.addEventListener("toggle", (e) => { const d = e.target; if (d && d.matches && d.matches("details[data-dd]")) S.ddOpen = d.open; if (d && d.matches && d.matches("details[data-wk]")) S.wkOpen = d.open; if (d && d.matches && d.matches("details[data-more]")) S.moreOpen = d.open; }, true);
   app.addEventListener("input", onEdit);
   app.addEventListener("change", (e) => { if (e.target.tagName === "SELECT") onEdit(e); else if (e.target.id === "coverOver" && draft){ draft.coverOver = e.target.checked; queueSave(); } else if (e.target.id === "autoBillsOn" && S.db){ const on = e.target.checked; S.auto = {since: ymd(new Date(new Date().getFullYear(), new Date().getMonth(), 1)), posted: {}, ...(S.auto || {}), on}; S.db.doc("config/autobills").set(S.auto); if (on) runAutoBills(); } });
 
