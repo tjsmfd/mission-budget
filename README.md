@@ -21,7 +21,7 @@ The app saves a copy of your data inside itself once a week (kept for 8 weeks, s
 - Goals can have an exact date, a first checkpoint, and be marked "DoorDash funds this".
 - Log a dash (earned, miles, hours) on Today. Gas is miles / mpg x price (Fusion mpg and gas price are editable). The net after gas counts toward the goal, and the card says how much to earn or how many hours to dash. If you fall behind, it offers to move the gap from pocket money, only with your OK.
 
-Last updated: Nov 6, 2026 · 5:31 PM ET.
+Last updated: Nov 6, 2026 · 6:30 PM ET.
 
 If an update doesn't show: give GitHub about a minute, then fully close and reopen the app once.
 
@@ -64,3 +64,6 @@ Today → Accounts → **Move money** (or Goals → a goal → **Take money out*
 
 ## Today, three questions (Nov 2026)
 Today now shows one big pocket-money number with a short status chip (On pace / Over pace / Pocket money used up / Bill at risk), a tappable "Bills covered" row, Accounts, and three shortcuts (Can I afford it?, DoorDash, Paychecks). Tap the number for pace per day/week/month, a 7-day spending chart and Can I afford it. Everything else (DoorDash, paychecks, categories) lives under "Budget details". Tapping a History purchase opens a read-only details sheet; Edit and Delete are behind the ••• button.
+
+## Live bank balances (Nov 2026)
+Plan -> Bank: enter the bridge address and passphrase. Rosewood then reads checking (available balance) and savings from the bank through the Cloudflare Worker bridge (Plaid, read-only), on app open and every time you return to the app. In bank mode, entries logged in Rosewood no longer adjust the balance estimate, because the bank is the source of truth. The passphrase is stored only on the phone (localStorage), never in the backup or the repo. Turn off in Plan -> Bank.

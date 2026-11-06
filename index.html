@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Rosewood</title>
 <script>try{var _t=localStorage.getItem("mb-theme");document.documentElement.setAttribute("data-theme",_t==="classic"||_t==="pro"?_t:"sl")}catch(e){document.documentElement.setAttribute("data-theme","sl")}</script>
-<meta name="mb-build" content="1794004265">
+<meta name="mb-build" content="1794007840">
 <script>
 /* Auto-update: on open and on return to the app, check GitHub for a newer build and reload into it.
    Skips while a sheet is open so it never interrupts you mid-entry. */
-(function(){var B="1794004265";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
+(function(){var B="1794007840";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
 function chk(){fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){var m=t.match(/name="mb-build" content="(\d+)"/);if(!m||m[1]===B||Number(m[1])<Number(B))return;if(busy())return;try{if(sessionStorage.getItem("mb_rl")===m[1])return;sessionStorage.setItem("mb_rl",m[1])}catch(e){}location.replace(location.pathname+"?v="+m[1])}).catch(function(){})}
 window.addEventListener("load",function(){setTimeout(chk,1500)});document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();
 </script>
@@ -979,6 +979,7 @@ window.LocalDB = (function(){
   // Checking/savings estimated from the last balance update plus anything logged after it.
   function liveBalances(){
     const acc = S.accounts; if (!acc || acc.checking == null) return null;
+    if (acc.bank) return {checking: round2(num(acc.checking)), savings: acc.savings == null ? null : round2(num(acc.savings)), n: 0, asOf: acc.asOf, bank: true};
     // Only entries logged after the balance update AND dated on/after that day count, so back-filled history isn't subtracted twice.
     const since = acc.asOf || "", sinceDay = since ? ymd(new Date(since)) : "";
     const after = (x) => (x.ts || "") > since && (x.date || "") >= sinceDay;
@@ -989,7 +990,7 @@ window.LocalDB = (function(){
   }
   // Checking/savings before and after each logged entry, worked backward from today's estimate so it always matches the Today screen.
   function accountTrail(){
-    const lb = liveBalances(); if (!lb) return {};
+    const lb = liveBalances(); if (!lb || lb.bank) return {};
     const since = S.accounts.asOf || "", sinceDay = since ? ymd(new Date(since)) : "";
     const ev = [];
     const stamp = (x) => x.ts || ((x.date || "") + "T12:00:00.000Z");
@@ -1526,7 +1527,7 @@ window.LocalDB = (function(){
     const efund = lb.savings != null ? (S.goals.find((g) => g.id === "g-emergency") || S.goals.find((g) => /emergenc/i.test(g.name || ""))) : null;
     return `<section class="card" aria-label="Accounts" style="display:flex;flex-direction:column;gap:4px;padding:16px 18px">
       <div class="l1"><h2>Accounts</h2><span style="display:flex;gap:8px"><button type="button" class="pillbtn ghost" data-acc-move>Move money</button><button type="button" class="pillbtn ghost" data-accounts>Update</button></span></div>
-      ${rows.map(([n, v]) => `<div class="srcrow"><span>${n}${lb.n ? ' <span class="muted" style="font-size:12px">est.</span>' : ""}</span><b>${money(num(v))}</b></div>`).join("")}
+      ${rows.map(([n, v]) => `<div class="srcrow"><span>${n}${lb.n ? ' <span class="muted" style="font-size:12px">est.</span>' : lb.bank ? ' <span class="muted" style="font-size:12px">live</span>' : ""}</span><b>${money(num(v))}</b></div>`).join("")}
       ${efund ? `<div class="srcrow" style="padding-left:14px;border-left:2px solid var(--savings);margin-left:2px"><span>Emergency fund <span class="muted" style="font-size:12px">part of savings</span></span><b style="color:var(--savings)">${money(goalBalance(efund))}</b></div>` : ""}
       <div class="srcrow"><span class="muted">Total · ${esc(asOfText(a.asOf))}</span><b>${money(total)}</b></div>
       ${lb.n ? `<p class="hint" style="margin:4px 0 0">Estimated: your last bank balance plus ${lb.n} ${lb.n === 1 ? "entry" : "entries"} logged since. Update from your bank app to reset it.</p>` : ""}
@@ -1537,6 +1538,46 @@ window.LocalDB = (function(){
     if (!a || a.savings == null) return '<span class="sub">Add your savings balance (Today → Accounts) to see how much of it is assigned to goals.</span>';
     const free = num(a.savings) - inGoals;
     return `<span class="sub">Savings account ${money(num(a.savings))} · ${free >= 0 ? money(free) + " not in a goal yet" : `<span style="color:var(--warn)">goals are ${money(-free)} more than your savings account</span>`}</span>`;
+  }
+  // ---------------- bank link (Plaid, through your own Cloudflare Worker) ----------------
+  const bankCfg = () => { try { return JSON.parse(localStorage.getItem("rw_bank") || "null"); } catch (e){ return null; } };
+  const bankSet = (c) => { try { localStorage.setItem("rw_bank", JSON.stringify(c)); } catch (e){} };
+  let bankBusy = false;
+  async function bankSync(manual){
+    const cfg = bankCfg(); if (!cfg || !cfg.url || !cfg.key || !S.db || bankBusy) return;
+    if (!manual && S.accounts && S.accounts.bankAt && Date.now() - new Date(S.accounts.bankAt).getTime() < 120000) return;
+    bankBusy = true;
+    try {
+      const r = await fetch(cfg.url.replace(/\/+$/, "") + "/api/balances", {headers: {"x-rosewood-key": cfg.key}});
+      const d = await r.json(); if (!r.ok) throw new Error(d.error || "Bank request failed");
+      const dep = d.accounts.filter((a) => a.type === "depository");
+      const pick = (sub) => dep.filter((a) => a.subtype === sub);
+      const chk = pick("checking"), sav = pick("savings");
+      if (!chk.length) throw new Error("No checking account came back from your bank.");
+      const sum = (l, f) => round2(l.reduce((t, a) => t + num(f(a)), 0));
+      const body = {...(S.accounts || {}), checking: sum(chk, (a) => a.available != null ? a.available : a.current), savings: sav.length ? sum(sav, (a) => a.current) : (S.accounts && S.accounts.savings != null ? S.accounts.savings : null), asOf: new Date().toISOString(), bank: true, bankAt: d.at, bankNames: dep.map((a) => (a.institution || "") + " " + (a.name || "") + " ..." + (a.mask || ""))};
+      S.accounts = body; await S.db.doc("config/accounts").set(body);
+      bankMsg("Synced " + new Date().toLocaleTimeString("en-US", {hour: "numeric", minute: "2-digit"}));
+      render();
+    } catch (e){ bankMsg("Couldn't reach your bank: " + (e && e.message || "unknown error")); if (manual) toast("Bank sync failed"); }
+    finally { bankBusy = false; }
+  }
+  const bankMsg = (t) => { const el = document.getElementById("bankMsg"); if (el) el.textContent = t; S.bankStatus = t; };
+  function bankCardHTML(){
+    const c = bankCfg() || {}, a = S.accounts || {};
+    return `<section class="pcard" aria-label="Bank connection"><div class="prow" style="flex-direction:column;align-items:stretch;gap:8px">
+      <b style="font-size:15px">Bank connection</b>
+      <span class="sub">Rosewood reads your balances from your bank through your own secure bridge. It can't move money.</span>
+      <label class="lab" for="bkUrl">Bridge address</label><input class="field" id="bkUrl" autocomplete="off" autocapitalize="off" value="${esc(c.url || "https://rosewood-bank.tarickfullerjr.workers.dev")}">
+      <label class="lab" for="bkKey">Passphrase</label><input class="field" id="bkKey" type="password" autocomplete="off" value="${esc(c.key || "")}" placeholder="The APP_KEY you made">
+      <div class="qa" style="display:flex;gap:8px"><button type="button" class="pillbtn" id="bkSave">Save and sync now</button>${c.key ? '<button type="button" class="pillbtn ghost" id="bkOff">Turn off</button>' : ""}</div>
+      <span class="sub" id="bankMsg">${esc(S.bankStatus || (a.bank ? "Live from your bank, last synced " + asOfText(a.bankAt || a.asOf) : c.key ? "Not synced yet" : "Not connected"))}</span></div></section>`;
+  }
+  function wireBank(){
+    const sv = document.getElementById("bkSave"); if (!sv) return;
+    sv.onclick = () => { bankSet({url: document.getElementById("bkUrl").value.trim(), key: document.getElementById("bkKey").value}); bankMsg("Syncing..."); bankSync(true); };
+    const off = document.getElementById("bkOff");
+    if (off) off.onclick = async () => { try { localStorage.removeItem("rw_bank"); } catch (e){} if (S.accounts && S.accounts.bank){ const b = {...S.accounts, bank: false}; S.accounts = b; if (S.db) await S.db.doc("config/accounts").set(b); } S.bankStatus = ""; render(); };
   }
   function openAccounts(){
     const a = S.accounts || {};
@@ -1864,12 +1905,15 @@ window.LocalDB = (function(){
       <div class="sechead"><h2>DoorDash</h2><span>expected per month</span></div>
       <section class="pcard" aria-label="Expected DoorDash"><div class="prow"><div class="r"><label class="hint" for="sidemo" style="flex:1">About how much DoorDash do you expect to earn each month? 60% of it is counted toward your goals so Left to assign balances. Leave blank to count none.</label><input class="field num" id="sidemo" inputmode="decimal" style="width:100px;flex:none" placeholder="$0" value="${draft.side && num(draft.side.monthly) > 0 ? num(draft.side.monthly) : ""}"></div></div></section>
       <section class="pcard" aria-label="Safety cushion"><div class="prow"><div class="r"><label class="hint" for="cushion" style="flex:1">Never let Free to spend dip your projected checking below this, in case a paycheck comes in short or late.</label><input class="field num" id="cushion" inputmode="decimal" style="width:100px;flex:none" value="${draft.cushion != null ? num(draft.cushion) : 25}"></div></div></section>
+      <div class="sechead"><h2>Bank</h2><span>live balances</span></div>
+      ${bankCardHTML()}
       <div class="sechead"><h2>Overspending</h2><span>pocket money</span></div>
       <section class="pcard" aria-label="Automatic bills"><div class="prow"><label style="display:flex;gap:12px;align-items:center;font-size:14px;min-height:44px"><input type="checkbox" id="autoBillsOn" ${!S.auto || S.auto.on !== false ? "checked" : ""} style="width:22px;height:22px;flex:none;accent-color:var(--accent)"> On a bill's or subscription's due date, add it to History and take it out of my checking (unless I already logged it)</label></div></section>
       <section class="pcard" aria-label="Overspending"><div class="prow"><label style="display:flex;gap:12px;align-items:center;font-size:14px;min-height:44px"><input type="checkbox" id="coverOver" ${draft.coverOver !== false ? "checked" : ""} style="width:22px;height:22px;flex:none;accent-color:var(--accent)"> When I go over on gas, essentials, or a bill, take the extra out of my pocket money</label></div></section>
       <p class="foot">Goal: get Left to assign to $0</p>`;
     document.getElementById("addInc").onclick = () => { const r = {id: uid(), name: "", kind: "fixed", freq: "monthly", amount: 0}; draft.income.push(r); document.getElementById("incList").insertAdjacentHTML("beforeend", incRow(r)); focusLast("#incList"); queueSave(); };
     document.getElementById("addCat").onclick = () => { const r = {id: uid(), name: "", group: "Wants", budget: 0}; draft.categories.push(r); document.getElementById("catList").insertAdjacentHTML("beforeend", catRow(r)); focusLast("#catList"); queueSave(); };
+    wireBank();
   }
   const ord = (n) => n + (n % 10 === 1 && n !== 11 ? "st" : n % 10 === 2 && n !== 12 ? "nd" : n % 10 === 3 && n !== 13 ? "rd" : "th");
   function subsBoxHTML(){
@@ -2713,7 +2757,7 @@ window.LocalDB = (function(){
       } catch (e){} try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e){} }
     if (!db){ S.status = "offline"; S.plan = starterPlan(); S.goalsLoaded = true; S.months[monthKey(new Date())] = []; render(); return; }
     S.db = db;
-    document.addEventListener("visibilitychange", async () => { if (document.hidden) return; setTimeout(runAutoBills, 600); try { if (!S.empty && await db.weeklySnapshot()){ S.weekly = await db.weeklyList(); if (S.tab === "guide") render(); } } catch (e){} });
+    document.addEventListener("visibilitychange", async () => { if (document.hidden) return; setTimeout(runAutoBills, 600); setTimeout(() => bankSync(false), 800); try { if (!S.empty && await db.weeklySnapshot()){ S.weekly = await db.weeklyList(); if (S.tab === "guide") render(); } } catch (e){} });
     const _doc = db.doc.bind(db);
     db.doc = (p) => { const d = _doc(p), set = d.set; d.set = async (b) => { await set(b); if (S.empty){ S.empty = false; } }; return d; };
     db.doc("config/plan").onSnapshot((snap) => {
@@ -2751,7 +2795,7 @@ window.LocalDB = (function(){
       if (S.tab !== "plan") render();
     }, () => {});
     ensureMonth(monthKey(new Date()));
-    setTimeout(runAutoBills, 1500); setTimeout(runAutoBills, 4000);
+    setTimeout(runAutoBills, 1500); setTimeout(runAutoBills, 4000); setTimeout(() => bankSync(false), 2500);
   })();
 })();
 </script>
