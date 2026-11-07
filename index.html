@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Rosewood</title>
 <script>try{var _t=localStorage.getItem("mb-theme");document.documentElement.setAttribute("data-theme",_t==="classic"||_t==="pro"?_t:"sl")}catch(e){document.documentElement.setAttribute("data-theme","sl")}</script>
-<meta name="mb-build" content="1794009609">
+<meta name="mb-build" content="1794010034">
 <script>
 /* Auto-update: on open and on return to the app, check GitHub for a newer build and reload into it.
    Skips while a sheet is open so it never interrupts you mid-entry. */
-(function(){var B="1794009609";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
+(function(){var B="1794010034";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
 function chk(){fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){var m=t.match(/name="mb-build" content="(\d+)"/);if(!m||m[1]===B||Number(m[1])<Number(B))return;if(busy())return;try{if(sessionStorage.getItem("mb_rl")===m[1])return;sessionStorage.setItem("mb_rl",m[1])}catch(e){}location.replace(location.pathname+"?v="+m[1])}).catch(function(){})}
 window.rwCheck=function(f){if(f){try{sessionStorage.removeItem("mb_rl")}catch(e){}}chk()};window.addEventListener("load",function(){setTimeout(chk,1500)});document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();
 </script>
@@ -1401,19 +1401,19 @@ window.LocalDB = (function(){
   function openPace(focus){
     const m = monthStats(monthKey(new Date())), fc = freshFc(), pn = pocketNow(m, fc);
     if (!pn){ toast("Mark a category as Pocket money in Plan first."); return; }
-    const budget = m.funBudget + (m.pocketExtra || 0);
+    const extra = m.pocketExtra || 0, budget = round2(m.funBudget - extra);
     const funIds = new Set(cats().filter((c) => roleOf(c) === "fun").map((c) => c.id));
     const days = []; for (let i = 6; i >= 0; i--){ const d = addDays(todayStart(), -i), key = ymd(d); let v = 0; for (const t of m.tx) if (t.type !== "income" && funIds.has(t.categoryId) && t.date === key) v += num(t.amount); days.push({d, v}); }
     const mx = Math.max(1, ...days.map((x) => x.v));
     const {close, el} = sheet("Pocket money", `
       <div class="pcTop"><span class="sub">Left to spend now</span><b class="pcBig">${money(pn.avail)}</b></div>
-      <div class="pcTiles"><div><span>Per day</span><b>${money(pn.r, 0)}</b></div><div><span>Per week</span><b>${money(pn.W, 0)}</b></div><div><span>Month budget</span><b>${money(budget, 0)}</b></div></div>
+      <div class="pcTiles"><div><span>Per day</span><b>${money(pn.r, 0)}</b></div><div><span>Per week</span><b>${money(pn.W, 0)}</b></div><div><span>Month budget</span><b>${money(budget, 0)}</b></div></div>${extra > 0 ? `<p class="sub" style="margin:-6px 0 0">Plus ${money(extra, 0)} from DoorDash and other pocket income this month. That is extra, so it is not part of your pace.</p>` : ""}
       <div><div class="pcBars" aria-label="Pocket spending, last 7 days">${days.map((x, i) => `<i class="${i === 6 ? "now" : ""}" style="height:${Math.max(6, x.v / mx * 100)}%" title="${money(x.v)}"></i>`).join("")}</div><div class="pcDays">${days.map((x, i) => `<span class="${i === 6 ? "now" : ""}">${i === 6 ? "Today" : "SMTWTFS"[x.d.getDay()]}</span>`).join("")}</div></div>
       <div class="pchk"><span class="l2" style="font-weight:700;font-size:17px">Can I afford it?</span>
         <input class="field num" id="pvQ" inputmode="decimal" autocomplete="off" enterkeyhint="done" placeholder="$0.00" aria-label="Price of purchase">
         <div id="pvOut"></div>
         <div class="qa"><button type="button" class="pillbtn" id="pvCheck">Check</button><span id="pvLogWrap"></span></div></div>
-      <details class="dd"><summary><span class="stxt">How is this figured?</span></summary><div class="ddbody"><span class="sub">Your pocket budget (${money(budget, 0)}) is spread evenly over the month, so it grows ${money(pn.r)} a day. Pocket purchases and overspending covered from pocket money come off it. If checking can't spare that much after bills, the smaller number shows.</span></div></details>`);
+      <details class="dd"><summary><span class="stxt">How is this figured?</span></summary><div class="ddbody"><span class="sub">Your pocket budget (${money(budget, 0)}${extra > 0 ? ", not counting " + money(extra, 0) + " of DoorDash" : ""}) is spread evenly over the month, so it grows ${money(pn.r)} a day. Pocket purchases and overspending covered from pocket money come off it. If checking can't spare that much after bills, the smaller number shows.</span></div></details>`);
     const q = el.querySelector("#pvQ"), out = el.querySelector("#pvOut"), lw = el.querySelector("#pvLogWrap");
     const run = () => {
       const a = round2(num(q.value)); lw.innerHTML = "";
@@ -1518,7 +1518,7 @@ window.LocalDB = (function(){
           const cls = billPaid ? "paid" : isBill ? (q > 1 ? "over" : "") : lvl === "bad" ? "over" : lvl === "mid" ? "warn" : "paid";
           const amtTxt = billPaid ? "Paid" : notDue ? "Not due" : money(left);
           const amtCls = billPaid ? "paidtxt" : notDue ? "muted" : isBill ? (left < 0 ? "neg" : "") : "lvl-" + lvl;
-          let meta = billPaid ? `${money(sp)} paid this month${sp - b > 0.005 ? " · " + money(sp - b) + " more than budgeted" : ""}` : notDue ? `${money(b, 0)} · not due until next month` : `${money(sp)} of ${money(b, 0)}${isBill ? " · bill" : ""}`;
+          let meta = billPaid ? `${money(sp)} paid this month${sp - b > 0.005 ? " · " + money(sp - b) + " more than budgeted" : ""}` : notDue ? `${money(b, 0)} · not due until next month` : (firstFun && m.pocketExtra > 0 ? `${money(sp)} of ${money(num(c.budget), 0)} budget + ${money(m.pocketExtra, 0)} DoorDash` : `${money(sp)} of ${money(b, 0)}${isBill ? " · bill" : ""}`);
           if (isBill && !billPaid && !notDue && fc){
             const bn = billNote(c, fc, k);
             if (bn) meta += `<span class="billnote ${bn.ok ? "ok" : "short"}">${bn.text}</span>`;
@@ -1563,7 +1563,7 @@ window.LocalDB = (function(){
     const a = S.accounts;
     if (!a || a.savings == null) return '<span class="sub">Add your savings balance (Today → Accounts) to see how much of it is assigned to goals.</span>';
     const free = num(a.savings) - inGoals;
-    return `<span class="sub">Savings account ${money(num(a.savings))} · ${free >= 0 ? money(free) + " not in a goal yet" : `<span style="color:var(--warn)">goals are ${money(-free)} more than your savings account</span>`}</span>`;
+    return `<span class="sub">Savings account ${money(num(a.savings))} · ${free >= 0 ? money(free) + " not in a goal yet" : `<span style="color:var(--warn)">goals are ${money(-free)} more than your savings account</span>`}</span>${free <= -1 ? '<button type="button" class="pillbtn" data-fix-goals style="align-self:flex-start;margin-top:6px">Fix goal balances</button>' : free >= 1 ? '<button type="button" class="pillbtn" data-assign-free style="align-self:flex-start;margin-top:6px">Assign it</button>' : ""}`;
   }
   // ---------------- bank link (Plaid, through your own Cloudflare Worker) ----------------
   const bankCfg = () => { try { return JSON.parse(localStorage.getItem("rw_bank") || "null"); } catch (e){ return null; } };
@@ -1791,6 +1791,25 @@ window.LocalDB = (function(){
       if (pk > 0) await addTx({id: uid(), date: day, amount: pk, type: "income", categoryId: null, incomeId: null, note: "Recovered savings to pocket money", pocket: pk, ts: now});
       if (pk > 0 && S.db){ const b = {...S.accounts, freeAck: round2(num(S.accounts.freeAck) + pk)}; S.accounts = b; await S.db.doc("config/accounts").set(b); }
       toast("Assigned " + money(a) + " to " + (g ? g.name : "a goal") + (pk > 0 ? " and " + money(pk) + " to pocket money" : ""));
+    };
+  }
+  function openFixGoals(){
+    const lb = liveBalances(); if (!lb || lb.savings == null){ toast("Add your savings balance first."); return; }
+    const gl = S.goals.filter((g) => g.kind !== "dd"), tot = gl.reduce((t, g) => t + goalBalance(g), 0), short = round2(tot - lb.savings);
+    if (short < 1){ toast("Your goals already fit inside your savings."); return; }
+    const {close, el} = sheet("Fix goal balances", `
+      <p class="sub" style="margin:0;font-size:14px">Your goals add up to <b>${money(tot)}</b>, but your savings account holds <b>${money(lb.savings)}</b>. That's <b>${money(short)}</b> that the goals claim but doesn't exist. Take it out of the goal(s) you spent from. No real money moves.</p>
+      ${gl.map((g) => `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:44px"><span>${esc(g.name)} <span class="muted" style="font-size:12px">${money(goalBalance(g))}</span></span><input class="field num" style="max-width:110px" inputmode="decimal" data-fx="${esc(g.id)}" placeholder="Remove $" aria-label="Remove from ${esc(g.name)}"></div>`).join("")}
+      <p class="sub" id="fxLeft" style="margin:0"></p>
+      <button type="button" class="save" id="fxGo">Apply</button>`);
+    const left = () => { const r = round2(short - [...el.querySelectorAll("[data-fx]")].reduce((t, i) => t + Math.max(0, num(i.value)), 0)); el.querySelector("#fxLeft").textContent = r > 0.004 ? money(r) + " still to remove to match your savings." : r < -0.004 ? "That removes " + money(-r) + " more than needed." : "That matches your savings account."; };
+    el.querySelectorAll("[data-fx]").forEach((i) => i.oninput = left); left();
+    el.querySelector("#fxGo").onclick = async () => {
+      const rows = [...el.querySelectorAll("[data-fx]")].map((i) => ({g: S.goals.find((x) => x.id === i.dataset.fx), v: round2(Math.max(0, num(i.value)))})).filter((x) => x.g && x.v > 0);
+      if (!rows.length){ toast("Enter an amount for at least one goal."); return; }
+      close();
+      for (const x of rows) await addGoalEntry(x.g, {id: uid(), date: ymd(new Date()), amount: -Math.min(x.v, Math.max(0, goalBalance(x.g))), note: "Balance correction (money was already spent)", direct: true, ts: new Date().toISOString()});
+      toast("Goal balances updated");
     };
   }
   function openAccounts(){
@@ -2823,6 +2842,7 @@ window.LocalDB = (function(){
       try { localStorage.setItem("fd_paper", v); } catch (e){ toast("Couldn't save the link on this phone."); return; }
       paperSig = ""; paperSend(true); render(); return;
     }
+    if ((el = t("[data-fix-goals]"))){ openFixGoals(); return; }
     if ((el = t("[data-assign-free]"))){ openAssignFree(); return; }
     if ((el = t("[data-bt-ok]"))){ btDismiss(el.dataset.btOk, false); return; }
     if ((el = t("[data-bt-undo]"))){ if (confirm("Remove this entry?")) btDismiss(el.dataset.btUndo, true); return; }
@@ -3007,6 +3027,14 @@ window.LocalDB = (function(){
       S.dash = snap.exists ? {items: [], ...JSON.parse(JSON.stringify(snap.data()))} : {items: []};
       if (S.tab !== "plan") render();
     }, () => {});
+    (async () => { try {
+      const mg = await db.doc("config/migr").get(); const cur = mg.exists ? (mg.data() || {}) : {};
+      if (cur.ef105) return;
+      for (let i = 0; i < 40 && !S.goalsLoaded; i++) await new Promise((r) => setTimeout(r, 250));
+      const g = S.goals.find((x) => x.id === "g-emergency");
+      if (g && num(g.monthly) === 102){ const body = {...g, monthly: 105}; const id = body.id; delete body.id; await saveGoal(id, body); toast("Emergency Fund monthly raised to $105"); }
+      await db.doc("config/migr").set({...cur, ef105: true});
+    } catch (e){} })();
     db.doc("config/autobills").onSnapshot((snap) => {
       S.auto = snap.exists ? JSON.parse(JSON.stringify(snap.data())) : null;
       if (S.tab === "plan" && draft) { const cb = document.getElementById("autoBillsOn"); if (cb) cb.checked = !S.auto || S.auto.on !== false; } else if (S.tab !== "plan") render();

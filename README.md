@@ -21,7 +21,7 @@ The app saves a copy of your data inside itself once a week (kept for 8 weeks, s
 - Goals can have an exact date, a first checkpoint, and be marked "DoorDash funds this".
 - Log a dash (earned, miles, hours) on Today. Gas is miles / mpg x price (Fusion mpg and gas price are editable). The net after gas counts toward the goal, and the card says how much to earn or how many hours to dash. If you fall behind, it offers to move the gap from pocket money, only with your OK.
 
-Last updated: Nov 6, 2026 · 7:00 PM ET.
+Last updated: Nov 6, 2026 · 7:07 PM ET.
 
 If an update doesn't show: give GitHub about a minute, then fully close and reopen the app once.
 
@@ -70,3 +70,6 @@ Plan -> Bank: enter the bridge address and passphrase. Rosewood then reads check
 
 ## Auto-logging bank activity (Nov 2026)
 After each balance sync Rosewood reads new bank activity from today onward (cursor and rules in config/bankTx). Purchases are categorized (remembered merchant rule, bill amount match, every gas station charge = Gas, food = Pocket money), deposits go to the matching paycheck source or DoorDash (with the 70/40 pocket share), checking/savings transfers become a savings-goal move on Emergency Fund (not spending). Entries you already logged by hand, or bills Rosewood auto-posted, are matched instead of duplicated. Pending charges are updated when they post and removed if they disappear. Everything lands in the "New from bank" box on Today: change the category (it remembers the merchant), OK, or Undo.
+
+## Goals vs savings, pocket display, Emergency Fund (Nov 2026)
+Goals tab: when goals add up to more than the savings account, "Fix goal balances" lets you remove the difference from the goal(s) you spent from (no real money moves); when savings exceed goals, "Assign it". Pocket money rows and the pace sheet now show the $400 budget separately from DoorDash/pocket income ("$X of $400 budget + $Y DoorDash"); only the budget sets the pace. A one-time migration raised Emergency Fund monthly from $102 to $105 (config/migr).
