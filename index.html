@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Rosewood</title>
 <script>try{var _t=localStorage.getItem("mb-theme");document.documentElement.setAttribute("data-theme",_t==="classic"||_t==="pro"?_t:"sl")}catch(e){document.documentElement.setAttribute("data-theme","sl")}</script>
-<meta name="mb-build" content="1794009316">
+<meta name="mb-build" content="1794009609">
 <script>
 /* Auto-update: on open and on return to the app, check GitHub for a newer build and reload into it.
    Skips while a sheet is open so it never interrupts you mid-entry. */
-(function(){var B="1794009316";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
+(function(){var B="1794009609";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
 function chk(){fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){var m=t.match(/name="mb-build" content="(\d+)"/);if(!m||m[1]===B||Number(m[1])<Number(B))return;if(busy())return;try{if(sessionStorage.getItem("mb_rl")===m[1])return;sessionStorage.setItem("mb_rl",m[1])}catch(e){}location.replace(location.pathname+"?v="+m[1])}).catch(function(){})}
 window.rwCheck=function(f){if(f){try{sessionStorage.removeItem("mb_rl")}catch(e){}}chk()};window.addEventListener("load",function(){setTimeout(chk,1500)});document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();
 </script>
@@ -1553,6 +1553,7 @@ window.LocalDB = (function(){
     return `<section class="card" aria-label="Accounts" style="display:flex;flex-direction:column;gap:4px;padding:16px 18px">
       <div class="l1"><h2>Accounts</h2><span style="display:flex;gap:8px"><button type="button" class="pillbtn ghost" data-acc-move>Move money</button><button type="button" class="pillbtn ghost" data-accounts>Update</button></span></div>
       ${rows.map(([n, v]) => `<div class="srcrow"><span>${n}${lb.n ? ' <span class="muted" style="font-size:12px">est.</span>' : lb.bank ? ' <span class="muted" style="font-size:12px">live</span>' : ""}</span><b>${money(num(v))}</b></div>`).join("")}
+      ${(() => { const f = freeSavings(); return f != null && f >= 1 ? `<div class="srcrow"><span>Savings not in a goal</span><span style="display:flex;gap:8px;align-items:center"><b>${money(f)}</b><button type="button" class="pillbtn" data-assign-free>Assign</button></span></div>` : ""; })()}
       ${efund ? `<div class="srcrow" style="padding-left:14px;border-left:2px solid var(--savings);margin-left:2px"><span>Emergency fund <span class="muted" style="font-size:12px">part of savings</span></span><b style="color:var(--savings)">${money(goalBalance(efund))}</b></div>` : ""}
       <div class="srcrow"><span class="muted">Total · ${esc(asOfText(a.asOf))}</span><b>${money(total)}</b></div>
       ${lb.n ? `<p class="hint" style="margin:4px 0 0">Estimated: your last bank balance plus ${lb.n} ${lb.n === 1 ? "entry" : "entries"} logged since. Update from your bank app to reset it.</p>` : ""}
@@ -1770,6 +1771,27 @@ window.LocalDB = (function(){
     }).join("");
     const needs = list.filter((x) => x.review).length;
     return `<details class="card more" data-btbox ${S.btOpen || needs ? "open" : ""}><summary><span class="stxt">New from bank (${list.length})</span><span class="sub">${needs ? needs + " need a category" : "Added automatically. Tap to review."}</span></summary><div class="morebody">${rows}</div></details>`;
+  }
+  const freeSavings = () => { const lb = liveBalances(); if (!lb || lb.savings == null) return null; return round2(lb.savings - S.goals.reduce((t, g) => t + goalBalance(g), 0) - num(S.accounts.freeAck)); };
+  function openAssignFree(){
+    const free = freeSavings(); if (free == null || free < 1){ toast("Every dollar of your savings is already in a goal."); return; }
+    const gl = S.goals.filter((g) => g.kind !== "dd"), rich = gl.find((g) => /richmond/i.test(g.name || "")) || gl[0];
+    const {close, el} = sheet("Assign unassigned savings", `
+      <p class="sub" style="margin:0;font-size:14px">Your savings account has <b>${money(free)}</b> that isn't in any goal. Choose where it goes.</p>
+      <div><label class="lab" for="afG">To a goal</label><select class="field" id="afG">${gl.map((g) => `<option value="${esc(g.id)}" ${rich && g.id === rich.id ? "selected" : ""}>${esc(g.name)}</option>`).join("")}</select>
+      <label class="lab" for="afA" style="margin-top:10px">Amount to that goal</label><input class="field num" id="afA" inputmode="decimal" value="${Math.min(100, free)}"></div>
+      <p class="sub" id="afRest" style="margin:0"></p>
+      <button type="button" class="save" id="afGo">Assign</button>`);
+    const rest = () => { const a = Math.min(free, Math.max(0, round2(num(el.querySelector("#afA").value)))); el.querySelector("#afRest").innerHTML = `The other <b>${money(round2(free - a))}</b> becomes extra pocket money this month. It stays in savings until you move it to checking, so tap Undo on that transfer's item in "New from bank" when it shows up.`; return a; };
+    el.querySelector("#afA").oninput = rest; rest();
+    el.querySelector("#afGo").onclick = async () => {
+      const a = rest(), pk = round2(free - a), g = S.goals.find((x) => x.id === el.querySelector("#afG").value), now = new Date().toISOString(), day = ymd(new Date());
+      close();
+      if (a > 0 && g) await addGoalEntry(g, {id: uid(), date: day, amount: a, note: "Recovered savings", ts: now, direct: true});
+      if (pk > 0) await addTx({id: uid(), date: day, amount: pk, type: "income", categoryId: null, incomeId: null, note: "Recovered savings to pocket money", pocket: pk, ts: now});
+      if (pk > 0 && S.db){ const b = {...S.accounts, freeAck: round2(num(S.accounts.freeAck) + pk)}; S.accounts = b; await S.db.doc("config/accounts").set(b); }
+      toast("Assigned " + money(a) + " to " + (g ? g.name : "a goal") + (pk > 0 ? " and " + money(pk) + " to pocket money" : ""));
+    };
   }
   function openAccounts(){
     const a = S.accounts || {};
@@ -2801,6 +2823,7 @@ window.LocalDB = (function(){
       try { localStorage.setItem("fd_paper", v); } catch (e){ toast("Couldn't save the link on this phone."); return; }
       paperSig = ""; paperSend(true); render(); return;
     }
+    if ((el = t("[data-assign-free]"))){ openAssignFree(); return; }
     if ((el = t("[data-bt-ok]"))){ btDismiss(el.dataset.btOk, false); return; }
     if ((el = t("[data-bt-undo]"))){ if (confirm("Remove this entry?")) btDismiss(el.dataset.btUndo, true); return; }
     if ((el = t("[data-pace-afford]"))){ openPace(true); return; }
