@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Rosewood</title>
 <script>try{var _t=localStorage.getItem("mb-theme");document.documentElement.setAttribute("data-theme",_t==="classic"||_t==="pro"?_t:"sl")}catch(e){document.documentElement.setAttribute("data-theme","sl")}</script>
-<meta name="mb-build" content="1794010034">
+<meta name="mb-build" content="1794071948">
 <script>
 /* Auto-update: on open and on return to the app, check GitHub for a newer build and reload into it.
    Skips while a sheet is open so it never interrupts you mid-entry. */
-(function(){var B="1794010034";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
+(function(){var B="1794071948";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
 function chk(){fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){var m=t.match(/name="mb-build" content="(\d+)"/);if(!m||m[1]===B||Number(m[1])<Number(B))return;if(busy())return;try{if(sessionStorage.getItem("mb_rl")===m[1])return;sessionStorage.setItem("mb_rl",m[1])}catch(e){}location.replace(location.pathname+"?v="+m[1])}).catch(function(){})}
 window.rwCheck=function(f){if(f){try{sessionStorage.removeItem("mb_rl")}catch(e){}}chk()};window.addEventListener("load",function(){setTimeout(chk,1500)});document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();
 </script>
@@ -1599,19 +1599,22 @@ window.LocalDB = (function(){
       <label class="lab" for="bkUrl">Bridge address</label><input class="field" id="bkUrl" autocomplete="off" autocapitalize="off" value="${esc(c.url || "https://rosewood-bank.tarickfullerjr.workers.dev")}">
       <label class="lab" for="bkKey">Passphrase</label><input class="field" id="bkKey" type="password" autocomplete="off" value="${esc(c.key || "")}" placeholder="The APP_KEY you made">
       ${(a.bankAccts || []).length ? `<div style="display:flex;flex-direction:column;gap:6px"><b style="font-size:14px">Accounts your bank sent</b>${a.bankAccts.map((x) => `<div style="display:flex;flex-direction:column;gap:4px;padding:10px 12px;border-radius:12px;background:var(--card2)"><span style="font-size:14px;font-weight:600">${esc(x.name)}</span><span class="sub">${esc(x.sub || "account")} · balance ${x.cur == null ? "n/a" : money(x.cur)}${x.avail != null && x.avail !== x.cur ? " · available " + money(x.avail) : ""}</span><select class="field" data-bkmap="${esc(x.id)}" aria-label="Use ${esc(x.name)} as"><option value="chk" ${x.role === "chk" ? "selected" : ""}>Count as Checking</option><option value="sav" ${x.role === "sav" ? "selected" : ""}>Count as Savings</option><option value="off" ${x.role === "off" ? "selected" : ""}>Ignore</option></select></div>`).join("")}</div>` : ""}
-      <div class="qa" style="display:flex;gap:8px"><button type="button" class="pillbtn" id="bkSave">Save and sync now</button>${c.key ? '<button type="button" class="pillbtn ghost" id="bkOff">Turn off</button>' : ""}</div>
+      <div class="qa" style="display:flex;gap:8px"><button type="button" class="pillbtn" id="bkSave">Save and sync now</button>${c.key ? '<button type="button" class="pillbtn ghost" id="bkAct">Check activity</button><button type="button" class="pillbtn ghost" id="bkOff">Turn off</button>' : ""}</div>
+      <span class="sub" id="btMsg">${esc(S.btStatus || "Activity not checked yet")}</span>
       <span class="sub" id="bankMsg">${esc(S.bankStatus || (a.bank ? "Live from your bank, last synced " + asOfText(a.bankAt || a.asOf) : c.key ? "Not synced yet" : "Not connected"))}</span></div></section>`;
   }
   function wireBank(){
     const sv = document.getElementById("bkSave"); if (!sv) return;
     sv.onclick = () => { bankSet({...(bankCfg() || {}), url: document.getElementById("bkUrl").value.trim(), key: document.getElementById("bkKey").value}); bankMsg("Syncing..."); bankSync(true); };
     app.querySelectorAll("[data-bkmap]").forEach((sel) => sel.onchange = () => { const c = bankCfg() || {}; c.map = {...(c.map || {}), [sel.dataset.bkmap]: sel.value}; bankSet(c); bankMsg("Syncing..."); bankSync(true); });
+    const act = document.getElementById("bkAct"); if (act) act.onclick = () => { btNote("Checking activity..."); bankTxSync(true); };
     const off = document.getElementById("bkOff");
     if (off) off.onclick = async () => { try { localStorage.removeItem("rw_bank"); } catch (e){} if (S.accounts && S.accounts.bank){ const b = {...S.accounts, bank: false}; S.accounts = b; if (S.db) await S.db.doc("config/accounts").set(b); } S.bankStatus = ""; render(); };
   }
 
   // ---------------- bank transactions: auto-log what happens at the bank ----------------
   let btBusy = false;
+  const btNote = (t) => { S.btStatus = t; const el = document.getElementById("btMsg"); if (el) el.textContent = t; };
   const mkey = (n) => String(n || "").toLowerCase().replace(/[^a-z\s&']/g, " ").replace(/\s+/g, " ").trim().split(" ").slice(0, 2).join(" ");
   const GAS_RX = /shell|exxon|mobil|circle\s*k|wawa|\bbp\b|sunoco|speedway|chevron|marathon|murphy|valero|texaco|quiktrip|racetrac|sheetz|cumberland farms|7-eleven|fuel|gas\b/i;
   const dayDiff = (a, b) => Math.abs((parseD(a) - parseD(b)) / 864e5);
@@ -1623,7 +1626,7 @@ window.LocalDB = (function(){
       let bt = S.bt || {since: ymd(new Date()), cursors: {}, rules: {}, inbox: [], ids: {}};
       bt = {...bt, cursors: {...bt.cursors}, rules: {...bt.rules}, inbox: [...bt.inbox], ids: {...bt.ids}};
       const r = await fetch(cfg.url.replace(/\/+$/, "") + "/api/sync", {method: "POST", headers: {"content-type": "application/json", "x-rosewood-key": cfg.key}, body: JSON.stringify({cursors: bt.cursors})});
-      const d = await r.json(); if (!r.ok) throw new Error(d.error || "Sync failed");
+      const d = await r.json(); if (!r.ok) throw new Error((d.error || "Sync failed") + (d.plaid && d.plaid.code ? " [" + d.plaid.code + "]" : ""));
       const roles = Object.fromEntries((S.accounts.bankAccts || []).map((a) => [a.id, a.role]));
       let added = [], modified = [], removed = new Set();
       for (const id in d.items){ const it = d.items[id]; added.push(...it.added); modified.push(...it.modified); it.removed.forEach((x) => removed.add(x)); }
@@ -1721,9 +1724,11 @@ window.LocalDB = (function(){
       for (const id in d.items) bt.cursors[id] = d.items[id].cursor;
       bt.inbox = bt.inbox.slice(-40);
       S.bt = bt; await S.db.doc("config/bankTx").set(bt);
+      const nSeen = added.length + modified.length, nOld = added.filter((t) => t.date < bt.since).length, nIgn = added.filter((t) => !roles[t.account_id] || roles[t.account_id] === "off").length;
+      btNote("Activity checked " + new Date().toLocaleTimeString("en-US", {hour: "numeric", minute: "2-digit"}) + ": " + nSeen + " from the bank, " + made + " logged" + (nOld ? ", " + nOld + " older than " + bt.since + " skipped" : "") + (nIgn ? ", " + nIgn + " on ignored accounts" : "") + ".");
       if (made) toast(made + " new from your bank");
       render();
-    } catch (e){ if (manual) toast("Couldn't read bank activity: " + (e && e.message || "error")); }
+    } catch (e){ btNote("Activity check failed: " + (e && e.message || "unknown error")); if (manual) toast("Couldn't read bank activity: " + (e && e.message || "error")); }
     finally { btBusy = false; }
   }
   const btDismiss = async (id, undo) => {
