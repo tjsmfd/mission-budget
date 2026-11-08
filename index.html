@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Rosewood</title>
 <script>try{var _t=localStorage.getItem("mb-theme");document.documentElement.setAttribute("data-theme",_t==="classic"||_t==="pro"?_t:"sl")}catch(e){document.documentElement.setAttribute("data-theme","sl")}</script>
-<meta name="mb-build" content="1794145363">
+<meta name="mb-build" content="1794146465">
 <script>
 /* Auto-update: on open and on return to the app, check GitHub for a newer build and reload into it.
    Skips while a sheet is open so it never interrupts you mid-entry. */
-(function(){var B="1794145363";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
+(function(){var B="1794146465";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
 function chk(){fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){var m=t.match(/name="mb-build" content="(\d+)"/);if(!m||m[1]===B||Number(m[1])<Number(B))return;if(busy())return;try{if(sessionStorage.getItem("mb_rl")===m[1])return;sessionStorage.setItem("mb_rl",m[1])}catch(e){}location.replace(location.pathname+"?v="+m[1])}).catch(function(){})}
 window.rwCheck=function(f){if(f){try{sessionStorage.removeItem("mb_rl")}catch(e){}}chk()};window.addEventListener("load",function(){setTimeout(chk,1500)});document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();
 </script>
@@ -404,11 +404,12 @@ html[data-theme="sl"] .tab[aria-current="page"]::after{content:"";position:absol
 .tkbig{font-family:var(--serif,"Fraunces",Georgia,serif);font-weight:600;font-size:84px;line-height:1;color:var(--fg);font-variant-numeric:tabular-nums}
 .tkbig.pace{color:var(--accent)}.tkbig.amb{color:var(--warn)}.tkbig.neg{color:var(--red)}
 .tkchip{display:inline-flex;align-items:center;gap:8px;padding:8px 16px 8px 10px;border-radius:999px;font-size:15px;font-weight:700;border:1px solid transparent}
-.tkchip .ic{width:20px;height:20px;display:grid;place-items:center;font-size:12px;font-weight:800}
-.tkchip.lv0{background:var(--ok-tint);border-color:rgba(111,211,154,.4)}.tkchip.lv0 .ic{border-radius:50%;background:var(--ok);color:#10261A}
-.tkchip.lv1{background:rgba(217,183,122,.10);border-color:rgba(217,183,122,.45);color:var(--accent)}.tkchip.lv1 .ic{border-radius:50%;background:var(--accent);color:#2A1704}
-.tkchip.lv2{background:var(--warn-tint);border-color:var(--warn);color:var(--warn)}.tkchip.lv2 .ic{border-radius:6px;background:var(--warn);color:#2A1D04}
-.tkchip.lv3{background:rgba(240,103,91,.18);border-color:var(--red);color:var(--red)}.tkchip.lv3 .ic{border-radius:6px;background:var(--red);color:#2A0C09}
+.tkchip .ic{width:20px;height:20px;display:grid;place-items:center;font-size:16px;font-weight:800}
+.tkchip.lv0{background:var(--ok-tint);border-color:rgba(111,211,154,.4);color:var(--ok)}
+.tkchip.lv1{background:rgba(235,203,122,.12);border-color:rgba(235,203,122,.5);color:#EBCB7A}
+.tkchip.lv2{background:rgba(233,162,91,.14);border-color:rgba(233,162,91,.55);color:#E9A25B}
+.tkchip.lv3{background:rgba(240,103,91,.18);border-color:var(--red);color:var(--red)}
+.tkchip .ic svg{display:block}
 .tkchip.lvstale{background:var(--card2)}.tkchip.lvstale .ic{border-radius:50%;background:var(--muted);color:var(--bg)}
 .tksub{font-size:14px;color:var(--muted);max-width:320px;line-height:1.4}
 .tkbill{width:100%;min-height:44px;border:0;color:inherit;font:inherit;text-align:left;align-items:center;cursor:pointer}
@@ -1582,7 +1583,8 @@ window.LocalDB = (function(){
     else if (!pn) heroSub = "Mark a category as Pocket money in Plan";
     else if (pn.H < 0) heroSub = `Over your pace by ${money(-pn.H)} · back on pace ${dfmt(fitDate(pn, fc, 0.01) || todayStart())}`;
     else heroSub = `Pace ${money(pn.W, 0)}/week · grows ${money(pn.r)}/day` + (pn.cash !== null && pn.cash < pn.H - 0.5 ? ` · ${money(pn.H - pn.cash)} held back for bills` : "");
-    const chipTxt = !st ? "" : {0: "On pace", 1: "Over pace", 2: "Pocket money used up", 3: "Bill at risk", stale: "Update your balance"}[st.lvl];
+    const overBy = pn && pn.H < -0.5 ? -pn.H : 0;
+    const chipTxt = !st ? "" : {0: "On pace", 1: overBy >= 0.5 ? "Over pace by " + money(overBy, 0) : "Over pace", 2: "Pocket money used up", 3: "Bill at risk", stale: "Update your balance"}[st.lvl];
     let chipSub = "";
     if (st && pn){
       if (st.lvl === 0) chipSub = `${money(pn.W, 0)} a week · ${money(pn.r, 0)} a day`;
@@ -1590,7 +1592,12 @@ window.LocalDB = (function(){
       else if (st.lvl === 2){ const np = nextPayD(fc); chipSub = `Bills are fine. ${np ? "Refills " + dfmt(np) : "Hold off for now"}`; }
       else chipSub = st.text;
     } else if (st) chipSub = st.text;
-    const chipIc = {0: "✓", 1: "↑", 2: "!", 3: "✕", stale: "↻"}[st ? st.lvl : 0];
+    // Speedometer set: needle up = on pace, needle swings right (and the chip warms toward orange-red) as you go further over.
+    const gz = (deg) => { const a = deg * Math.PI / 180; return `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 17a8.5 8.5 0 0 1 17 0"/><path d="M12 17l${(6.5 * Math.sin(a)).toFixed(1)} ${(-6.5 * Math.cos(a)).toFixed(1)}"/></svg>`; };
+    const sv = (p) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+    const ot = Math.min(1, overBy / 150), lp = (x, y) => Math.round(x + (y - x) * ot), oc = `${lp(235, 238)},${lp(203, 140)},${lp(122, 90)}`;
+    const chipStyle = st && st.lvl === 1 ? `color:rgb(${oc});background:rgba(${oc},.12);border-color:rgba(${oc},.5)` : "";
+    const chipIc = st ? {0: gz(0), 1: gz(25 + ot * 60), 2: sv('<circle cx="12" cy="12" r="9"/><path d="M8 8l8 8"/>'), 3: sv('<path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17.2v.1"/>'), stale: "↻"}[st.lvl] : "";
     const billSub = st && st.bills ? st.bills.sub.replace(/^Through [^.]+\.\s*/, "") : "";
     let html = `
       <div class="headrow"><div class="head"><span class="date">${esc(now.toLocaleString("en-US", {weekday: "long", month: "short", day: "numeric"}))}</span><h1>${greeting()}</h1></div>${helpBtn()}</div>
@@ -1600,7 +1607,7 @@ window.LocalDB = (function(){
           <span class="tkl">Pocket money</span>
           <span class="tkbig ${pn && pn.avail < 0 ? (st && st.lvl === 3 ? "neg" : st && st.lvl === 2 ? "amb" : "pace") : ""}">${heroBig}</span>
         </button>
-        ${st ? `<span class="tkchip lv${st.lvl}" role="status"><span class="ic" aria-hidden="true">${chipIc}</span>${chipTxt}</span><span class="tksub">${chipSub}</span>` : `<span class="tksub">${esc(heroSub)}</span>`}
+        ${st ? `<span class="tkchip lv${st.lvl}" role="status" ${chipStyle ? `style="${chipStyle}"` : ""}><span class="ic" aria-hidden="true">${chipIc}</span>${chipTxt}</span><span class="tksub">${chipSub}</span>` : `<span class="tksub">${esc(heroSub)}</span>`}
       </section>
       ${st && st.bills ? `<button type="button" class="mbill tkbill ${st.bills.ok ? "ok" : "bad"}" data-go="forecast" aria-label="${esc(st.bills.head)}. Tap for the 30-day forecast."><span class="bic">${st.bills.ok ? "✓" : "✕"}</span><span style="flex:1"><b>${esc(st.bills.head)}</b><span class="sub" style="display:block">${billSub}</span></span><span class="muted" aria-hidden="true">›</span></button>` : ""}
       ${loading ? "" : accountsCard()}

@@ -21,7 +21,7 @@ The app saves a copy of your data inside itself once a week (kept for 8 weeks, s
 - Goals can have an exact date, a first checkpoint, and be marked "DoorDash funds this".
 - Log a dash (earned, miles, hours) on Today. Gas is miles / mpg x price (Fusion mpg and gas price are editable). The net after gas counts toward the goal, and the card says how much to earn or how many hours to dash. If you fall behind, it offers to move the gap from pocket money, only with your OK.
 
-Last updated: Nov 8, 2026 · 8:42 AM ET.
+Last updated: Nov 8, 2026 · 9:01 AM ET.
 
 If an update doesn't show: give GitHub about a minute, then fully close and reopen the app once.
 
@@ -76,3 +76,6 @@ Goals tab: when goals add up to more than the savings account, "Fix goal balance
 
 ## Privacy cover
 The app opens on a fake home screen (pocket money $560 to $650, "On pace", fake balances, History and Plan tabs). Double-tap the big number within 1.5 seconds to bubble through to the real screen. On the real Today screen, double-tap the big number (within about half a second) to cover it again. It re-covers after 1 minute away. Nothing about the cover is stored; real data is untouched.
+
+## Pace chip symbols
+The status chip under the big number uses a speedometer: needle up = On pace; needle swings right and the chip warms from amber to deep orange as you go further over ("Over pace by $26", full shift at $150); slashed circle = Pocket money used up (orange); triangle = Bill at risk (red).
