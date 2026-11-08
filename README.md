@@ -21,7 +21,7 @@ The app saves a copy of your data inside itself once a week (kept for 8 weeks, s
 - Goals can have an exact date, a first checkpoint, and be marked "DoorDash funds this".
 - Log a dash (earned, miles, hours) on Today. Gas is miles / mpg x price (Fusion mpg and gas price are editable). The net after gas counts toward the goal, and the card says how much to earn or how many hours to dash. If you fall behind, it offers to move the gap from pocket money, only with your OK.
 
-Last updated: Nov 7, 2026 · 12:19 PM ET.
+Last updated: Nov 8, 2026 · 8:42 AM ET.
 
 If an update doesn't show: give GitHub about a minute, then fully close and reopen the app once.
 
@@ -73,3 +73,6 @@ After each balance sync Rosewood reads new bank activity from today onward (curs
 
 ## Goals vs savings, pocket display, Emergency Fund (Nov 2026)
 Goals tab: when goals add up to more than the savings account, "Fix goal balances" lets you remove the difference from the goal(s) you spent from (no real money moves); when savings exceed goals, "Assign it". Pocket money rows and the pace sheet now show the $400 budget separately from DoorDash/pocket income ("$X of $400 budget + $Y DoorDash"); only the budget sets the pace. A one-time migration raised Emergency Fund monthly from $102 to $105 (config/migr).
+
+## Privacy cover
+The app opens on a fake home screen (pocket money $560 to $650, "On pace", fake balances, History and Plan tabs). Double-tap the big number within 1.5 seconds to bubble through to the real screen. On the real Today screen, double-tap the big number (within about half a second) to cover it again. It re-covers after 1 minute away. Nothing about the cover is stored; real data is untouched.

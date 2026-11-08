@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Rosewood</title>
 <script>try{var _t=localStorage.getItem("mb-theme");document.documentElement.setAttribute("data-theme",_t==="classic"||_t==="pro"?_t:"sl")}catch(e){document.documentElement.setAttribute("data-theme","sl")}</script>
-<meta name="mb-build" content="1794071948">
+<meta name="mb-build" content="1794145363">
 <script>
 /* Auto-update: on open and on return to the app, check GitHub for a newer build and reload into it.
    Skips while a sheet is open so it never interrupts you mid-entry. */
-(function(){var B="1794071948";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
+(function(){var B="1794145363";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
 function chk(){fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){var m=t.match(/name="mb-build" content="(\d+)"/);if(!m||m[1]===B||Number(m[1])<Number(B))return;if(busy())return;try{if(sessionStorage.getItem("mb_rl")===m[1])return;sessionStorage.setItem("mb_rl",m[1])}catch(e){}location.replace(location.pathname+"?v="+m[1])}).catch(function(){})}
 window.rwCheck=function(f){if(f){try{sessionStorage.removeItem("mb_rl")}catch(e){}}chk()};window.addEventListener("load",function(){setTimeout(chk,1500)});document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();
 </script>
@@ -475,6 +475,131 @@ html[data-theme="sl"] .tab[aria-current="page"]::after{content:"";position:absol
 </style>
 </head>
 <body>
+<!-- Privacy cover: a believable fake home screen shown on every open. Double-tap the big number to bubble through to the real screen; double-tap it again to cover up. Re-covers after 1 minute away. -->
+<style>
+#rwc{position:fixed;inset:0;z-index:90;display:flex;flex-direction:column;background:radial-gradient(120% 55% at 50% 0%,#2B1321 0%,#160810 62%);color:#F4E7CF;font-family:var(--font,-apple-system,system-ui,sans-serif);-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;padding-top:env(safe-area-inset-top,0px)}
+#rwc[hidden]{display:none}
+#rwc .cv{flex:1;min-height:0;overflow:hidden;max-width:480px;width:100%;margin:0 auto;padding:0 20px}
+#rwc .top{display:flex;justify-content:space-between;align-items:baseline;padding:18px 4px 0}
+#rwc .lg{font-family:'Fraunces',Georgia,serif;font-weight:500;font-size:22px}
+#rwc .dt{font-size:14px;color:#C9B79F}
+#rwc .hero{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:22px}
+#rwc .lb{font-size:12px;letter-spacing:.18em;color:#C9B79F;text-transform:uppercase}
+#rwc .bg{font-family:'Fraunces',Georgia,serif;font-weight:500;font-size:clamp(64px,22vw,92px);line-height:1;color:#FBEFD8;padding:6px 14px;border-radius:20px;cursor:pointer;font-variant-numeric:tabular-nums}
+#rwc .bg small{font-size:.42em;color:#C9B79F}
+#rwc .pl{padding:7px 16px;border-radius:999px;font-size:15px;font-weight:600;color:#6FD39A;background:rgba(111,211,154,.12);border:1px solid rgba(111,211,154,.4)}
+#rwc .cd{margin-top:12px;padding:14px 16px;border-radius:18px;background:#221019}
+#rwc .rw{display:flex;justify-content:space-between;align-items:center;font-size:15px;padding:10px 0}
+#rwc .rw+.rw{border-top:1px solid rgba(244,231,207,.14)}
+#rwc .m{color:#C9B79F}#rwc .g{color:#6FD39A}
+#rwc .tw{display:flex}#rwc .tw>div{flex:1}#rwc .tw>div+div{padding-left:18px;border-left:1px solid rgba(244,231,207,.14)}
+#rwc .k{font-size:13px;color:#C9B79F}
+#rwc .v{font-family:'Fraunces',Georgia,serif;font-weight:500;font-size:26px;font-variant-numeric:tabular-nums}
+#rwc .bl{display:flex;gap:14px;align-items:center;font-size:17px;font-weight:600}
+#rwc .tk{width:30px;height:30px;border-radius:50%;background:#6FD39A;display:grid;place-items:center;color:#10261A;font-weight:800;flex:none}
+#rwc .br{height:8px;border-radius:99px;background:rgba(244,231,207,.1);margin-top:10px;overflow:hidden}
+#rwc .br i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#EBCB8E,#C89F55)}
+#rwc .h2{font-family:'Fraunces',Georgia,serif;font-weight:500;font-size:26px;padding:22px 4px 0}
+#rwc .tabs{display:flex;border-top:1px solid rgba(244,231,207,.14);background:rgba(22,8,16,.92);padding-bottom:env(safe-area-inset-bottom,0px)}
+#rwc .tb{flex:1;height:54px;border:0;background:none;color:#C9B79F;font:600 13px var(--font,system-ui)}
+#rwc .tb[aria-selected=true]{color:#EBCB8E}
+#rwb{position:fixed;inset:0;z-index:95;pointer-events:none;overflow:hidden}
+#rwb .bb{position:absolute;border-radius:50%;box-sizing:border-box;border:2px solid rgba(255,255,255,.92);background:radial-gradient(circle at 30% 28%,rgba(255,255,255,.55) 0,rgba(255,255,255,.12) 18%,rgba(42,19,33,.9) 64%);box-shadow:inset -3px -4px 8px rgba(235,203,142,.28);opacity:0;will-change:transform}
+#rwb .bb::after{content:"";position:absolute;left:22%;top:16%;width:26%;height:16%;border-radius:50%;background:rgba(255,255,255,.95);transform:rotate(-28deg)}
+</style>
+<div id="rwc" aria-label="Rosewood"><div class="cv" id="rwcv"></div>
+<div class="tabs" role="tablist"><button class="tb" data-t="today" aria-selected="true">Today</button><button class="tb" data-t="history" aria-selected="false">History</button><button class="tb" data-t="plan" aria-selected="false">Plan</button></div></div>
+<div id="rwb" aria-hidden="true"></div>
+<script>
+(function(){
+  "use strict";
+  var cov = document.getElementById("rwc"), cv = document.getElementById("rwcv"), layer = document.getElementById("rwb");
+  var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var covered = true, busy = false, last = 0, realLast = 0, away = 0, tab = "today", fake = 600, pass = false;
+  var DOUBLE = 1500, REAL_DOUBLE = 450, RELOCK = 60000;
+  function newFake(){ fake = 560 + Math.random() * 90; }
+  newFake();
+  function draw(){
+    var h = "", d = new Date().toLocaleString("en-US", {weekday: "short", month: "short", day: "numeric"});
+    if (tab === "today"){
+      var c = "." + String(Math.round((fake % 1) * 100)).padStart(2, "0");
+      h = '<div class="top"><span class="lg">Rosewood</span><span class="dt">' + d + '</span></div><div class="hero"><div class="lb">Pocket money</div><div class="bg" id="rwcbig" role="button">$' + Math.floor(fake) + '<small>' + c + '</small></div><div class="pl">On pace</div></div>' +
+        '<div class="cd"><div class="bl"><span class="tk">&#10003;</span>Bills covered</div></div>' +
+        '<div class="cd tw"><div><div class="k">Checking</div><div class="v">$2,140.00</div></div><div><div class="k">Savings</div><div class="v">$4,820.00</div></div></div>' +
+        '<div class="cd"><div style="display:flex;justify-content:space-between;font-size:13px;color:#C9B79F"><span>Spent this month</span><span>$1,046 of $1,900</span></div><div class="br"><i style="width:55%"></i></div></div>' +
+        '<div class="cd" style="padding-top:6px;padding-bottom:6px"><div class="rw"><span>Chipotle</span><span class="m">-$12.85</span></div><div class="rw"><span>Paycheck</span><span class="g">+$740.00</span></div></div>' +
+        '<div class="cd" style="display:flex;justify-content:space-between;font-size:15px"><div><div class="k">Next bill</div>Phone, Nov 12</div><div style="text-align:right"><div class="k">Emergency fund</div>$3,150 saved</div></div>';
+    } else if (tab === "history"){
+      h = '<div class="h2">History</div><div class="cd" style="padding-top:6px;padding-bottom:6px"><div class="rw"><span>Chipotle</span><span class="m">-$12.85</span></div><div class="rw"><span>Paycheck</span><span class="g">+$740.00</span></div><div class="rw"><span>Shell Gas</span><span class="m">-$38.20</span></div><div class="rw"><span>Target</span><span class="m">-$26.40</span></div><div class="rw"><span>Transfer to savings</span><span class="m">-$100.00</span></div></div>';
+    } else {
+      h = '<div class="h2">Plan</div><div class="cd"><div style="display:flex;justify-content:space-between;font-size:15px"><span>Emergency fund</span><span>$3,150 of $5,000</span></div><div class="br"><i style="width:63%"></i></div></div><div class="cd"><div style="display:flex;justify-content:space-between;font-size:15px"><span>Richmond trip</span><span>$450 of $450</span></div><div class="br"><i style="width:100%"></i></div></div>';
+    }
+    cv.innerHTML = h;
+    var b = document.getElementById("rwcbig"); if (b) b.onclick = onCoverTap;
+    cov.querySelectorAll(".tb").forEach(function(t){ t.setAttribute("aria-selected", t.dataset.t === tab); });
+  }
+  cov.querySelectorAll(".tb").forEach(function(t){ t.onclick = function(){ if (busy) return; tab = t.dataset.t; draw(); }; });
+  function lockScroll(on){ document.documentElement.style.overflow = on ? "hidden" : ""; }
+  function showCover(){ newFake(); tab = "today"; draw(); cov.hidden = false; covered = true; lockScroll(true); }
+  function hideCover(){ cov.hidden = true; covered = false; lockScroll(false); window.scrollTo(0, 0); }
+  function closeSheets(){ document.querySelectorAll(".scrim").forEach(function(e){ e.remove(); }); }
+  function onCoverTap(){
+    if (busy) return;
+    var n = Date.now();
+    if (last && n - last <= DOUBLE){ last = 0; go(false); } else last = n;
+  }
+  function go(toCover){
+    busy = true;
+    if (reduce){ closeSheets(); toCover ? showCover() : hideCover(); busy = false; return; }
+    var W = window.innerWidth, H = window.innerHeight, T = 1800, FZ = 1800, NF = 6;
+    var N = Math.min(220, Math.round(130 * (W * H) / (390 * 844)));
+    var sizes = [5, 12, 8, 22, 6, 15, 10, 33, 18, 7, 27, 9, 13];
+    layer.innerHTML = "";
+    function mk(r, x, top){ var e = document.createElement("i"); e.className = "bb"; e.style.cssText = "left:" + (x - r) + "px;top:" + top + "px;width:" + 2 * r + "px;height:" + 2 * r + "px"; layer.appendChild(e); return e; }
+    for (var i = 0; i < N; i++){
+      var r = sizes[(i * 3) % sizes.length], gx = (.5 + i * .7548776662) % 1, gd = (.5 + i * .5698402910) % 1;
+      var e = mk(r, (gx * .94 + .03) * W, H + 10 + ((i * .37) % 1) * 60);
+      var delay = gd * T * .38, dur = T * .55 + ((i * .13) % 1) * T * .05, sx = (i % 2 ? -1 : 1) * (8 + ((i * .29) % 1) * 22), trav = H + 130;
+      e.animate([
+        {transform: "translate(0,0) scale(.5)", opacity: 0, offset: 0},
+        {opacity: 1, offset: .08},
+        {transform: "translate(" + sx + "px," + (-trav * .5) + "px) scale(1.05)", offset: .5},
+        {transform: "translate(" + (-sx * .5) + "px," + (-trav * .9) + "px) scale(1)", opacity: 1, offset: .9},
+        {transform: "translate(0," + (-trav * 1.02) + "px) scale(1.25)", opacity: 0, offset: 1}
+      ], {duration: dur, delay: delay, easing: "cubic-bezier(.35,.1,.45,1)", fill: "both"});
+    }
+    for (var j = 0; j < NF; j++){
+      var fr = [3, 3, 4, 4, 5, 6][j], f = mk(fr, (j + .5 + Math.random() * .4) / 6 * W, H + 10);
+      var fd = T * .6 + Math.random() * FZ * .8, rise = H + 30, fs = (Math.random() < .5 ? -1 : 1) * (6 + Math.random() * 16);
+      f.animate([
+        {transform: "translate(0,0) scale(.6)", opacity: 0, offset: 0},
+        {opacity: .95, offset: .15},
+        {transform: "translate(" + fs + "px," + (-rise * .6) + "px) scale(1)", opacity: .9, offset: .7},
+        {transform: "translate(" + (-fs * .6) + "px," + (-rise) + "px) scale(1.15)", opacity: 0, offset: 1}
+      ], {duration: 1500 + Math.random() * 500, delay: fd, easing: "ease-in-out", fill: "both"});
+    }
+    setTimeout(function(){ closeSheets(); toCover ? showCover() : hideCover(); }, T * .52);
+    setTimeout(function(){ busy = false; }, T + 80);
+    setTimeout(function(){ layer.innerHTML = ""; }, T * .6 + FZ + 1700);
+  }
+  // Real screen: double-tap the big number to cover it. A single tap still opens the pace details after a short wait.
+  document.addEventListener("click", function(e){
+    if (covered || busy || pass) return;
+    var t = e.target.closest && e.target.closest(".tkbtn[data-pace]"); if (!t) return;
+    e.stopPropagation(); e.preventDefault();
+    var n = Date.now();
+    if (realLast && n - realLast <= REAL_DOUBLE){ realLast = 0; go(true); return; }
+    realLast = n;
+    setTimeout(function(){ if (realLast === n && !covered && !busy){ realLast = 0; pass = true; try { t.click(); } finally { pass = false; } } }, REAL_DOUBLE + 20);
+  }, true);
+  // Cover again after 1 minute away
+  document.addEventListener("visibilitychange", function(){
+    if (document.hidden){ away = Date.now(); return; }
+    if (!covered && !busy && away && Date.now() - away >= RELOCK){ closeSheets(); showCover(); }
+  });
+  draw(); lockScroll(true);
+})();
+</script>
 
 <main class="app" id="app" aria-live="polite"></main>
 
