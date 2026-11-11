@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Rosewood</title>
 <script>try{var _t=localStorage.getItem("mb-theme");document.documentElement.setAttribute("data-theme",_t==="classic"||_t==="pro"?_t:"sl")}catch(e){document.documentElement.setAttribute("data-theme","sl")}</script>
-<meta name="mb-build" content="1794160379">
+<meta name="mb-build" content="1794437605">
 <script>
 /* Auto-update: on open and on return to the app, check GitHub for a newer build and reload into it.
    Skips while a sheet is open so it never interrupts you mid-entry. */
-(function(){var B="1794160379";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
+(function(){var B="1794437605";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
 function chk(){fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){var m=t.match(/name="mb-build" content="(\d+)"/);if(!m||m[1]===B||Number(m[1])<Number(B))return;if(busy())return;try{if(sessionStorage.getItem("mb_rl")===m[1])return;sessionStorage.setItem("mb_rl",m[1])}catch(e){}location.replace(location.pathname+"?v="+m[1])}).catch(function(){})}
 window.rwCheck=function(f){if(f){try{sessionStorage.removeItem("mb_rl")}catch(e){}}chk()};window.addEventListener("load",function(){setTimeout(chk,1500)});document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();
 </script>
@@ -764,6 +764,10 @@ window.LocalDB = (function(){
   const expectedMonthly = (list) => (list || incomes()).reduce((s, i) => s + num(i.amount) * (FREQ[i.freq] || FREQ.monthly)[1], 0);
   const ROLES = [["bill", "Bill"], ["regular", "Regular"], ["fun", "Pocket money"]];
   const roleOf = (c) => c.role || "regular";
+  // Loans: the part of an entry paid with borrowed money (t.loan, in dollars) never counts toward budgets, pocket money or the checking estimate.
+  // The loan is paid back through its own monthly payments instead.
+  const loanPart = (t) => t && t.loan ? Math.min(Math.abs(num(t.amount)), Math.max(0, num(t.loan))) : 0;
+  const counted = (t) => round2(num(t.amount) - loanPart(t));
   const goalBalance = (g) => (g.entries || []).reduce((s, e) => s + num(e.amount), 0);
   const goalAddedIn = (g, k) => (g.entries || []).filter((e) => e.date.startsWith(k) && num(e.amount) > 0 && !e.starting).reduce((s, e) => s + num(e.amount), 0);
   const goalsMonthly = () => S.goals.reduce((s, g) => s + num(g.monthly), 0);
@@ -773,8 +777,10 @@ window.LocalDB = (function(){
     const spent = {}, bySource = {};
     let incomeIn = 0, foodSpent = 0, foodN = 0, pocketExtra = 0;
     for (const t of tx){
-      if (t.type === "income"){ incomeIn += num(t.amount); if (t.pocket) pocketExtra += num(t.pocket); const key = t.incomeId && incById(t.incomeId) ? t.incomeId : "other"; bySource[key] = (bySource[key] || 0) + num(t.amount); }
-      else { spent[t.categoryId] = (spent[t.categoryId] || 0) + num(t.amount); if (t.tag === "food"){ foodSpent += num(t.amount); foodN++; } }
+      const a = counted(t);
+      if (t.loan && a <= 0) continue; // fully paid with a loan: not spending, not income
+      if (t.type === "income"){ incomeIn += a; if (t.pocket) pocketExtra += num(t.pocket); const key = t.incomeId && incById(t.incomeId) ? t.incomeId : "other"; bySource[key] = (bySource[key] || 0) + a; }
+      else { spent[t.categoryId] = (spent[t.categoryId] || 0) + a; if (t.tag === "food"){ foodSpent += a; foodN++; } }
     }
     let spendBudget = 0, spendSpent = 0;
     for (const c of cats()){ spendBudget += num(c.budget); spendSpent += spent[c.id] || 0; }
@@ -1028,6 +1034,11 @@ window.LocalDB = (function(){
       const rk = now.getDate() >= dim - 2 ? monthKey(now) : now.getDate() <= 5 ? shiftMonth(monthKey(now), -1) : "";
       if (rk) out += `<div class="notice soft"><span>${now.getDate() >= dim - 2 ? "The month is almost over." : "Last month is done."} Your ${esc(monthName(rk).split(" ")[0])} review is ready.</span><button type="button" data-review="${esc(rk)}">Review</button></div>`;
     }
+    if (S.status === "live") for (const {t, k} of loanSuspects().slice(0, 2)){
+      const inc = t.type === "income", c = catById(t.categoryId), what = inc ? "deposit" : (c ? c.name : "purchase");
+      out += `<div class="notice" role="note" style="flex-direction:column;align-items:stretch;gap:10px"><span><b>${money(num(t.amount))} ${esc(what)} on ${esc(prettyDate(t.date, {month: "short", day: "numeric"}))}</b>${t.note ? " (" + esc(t.note) + ")" : ""}. ${inc ? "Was this loan money? Right now it counts as income." : "Was this paid with a loan? Right now it counts against your budget and pocket money."}</span>
+        <span style="display:flex;gap:8px"><button type="button" data-loan-yes="${esc(t.id)}" data-month="${esc(k)}">Yes, a loan</button><button type="button" class="pillbtn ghost" data-loan-no="${esc(t.id)}" data-month="${esc(k)}">No</button></span></div>`;
+    }
     const doneCount = Object.values(S.guide.done || {}).filter(Boolean).length;
     if (S.plan && S.plan.example) out += '<div class="notice"><span>Your plan still has example numbers. The guide walks you through setting it up.</span><button type="button" data-go="guide">Start here</button></div>';
     else if (doneCount < 8 && !S.guide.hidden) out += `<div class="notice soft"><span>Getting started: ${doneCount} of 8 steps done.</span><button type="button" data-go="guide">Guide</button></div>`;
@@ -1113,7 +1124,7 @@ window.LocalDB = (function(){
     const since = acc.asOf || "", sinceDay = since ? ymd(new Date(since)) : "";
     const after = (x) => (x.ts || "") > since && (x.date || "") >= sinceDay;
     let chk = num(acc.checking), sav = acc.savings != null ? num(acc.savings) : null, n = 0;
-    for (const k in S.months) for (const t of S.months[k]) if (after(t)){ chk += t.type === "income" ? num(t.amount) : -num(t.amount); n++; }
+    for (const k in S.months) for (const t of S.months[k]) if (after(t)){ chk += t.type === "income" ? counted(t) : -counted(t); n++; }
     for (const g of S.goals) for (const e of (g.entries || [])) if (after(e) && !e.starting){ if (!e.direct) chk -= num(e.amount); if (sav != null) sav += num(e.amount); n++; }
     return {checking: round2(chk), savings: sav == null ? null : round2(sav), n, asOf: acc.asOf};
   }
@@ -1123,7 +1134,7 @@ window.LocalDB = (function(){
     const since = S.accounts.asOf || "", sinceDay = since ? ymd(new Date(since)) : "";
     const ev = [];
     const stamp = (x) => x.ts || ((x.date || "") + "T12:00:00.000Z");
-    for (const k in S.months) for (const t of S.months[k]) ev.push({id: t.id, at: stamp(t), counted: (t.ts || "") > since && (t.date || "") >= sinceDay, back: (t.ts || "") > since && (t.date || "") < sinceDay, chk: t.type === "income" ? num(t.amount) : -num(t.amount), sav: 0});
+    for (const k in S.months) for (const t of S.months[k]) ev.push({id: t.id, at: stamp(t), counted: (t.ts || "") > since && (t.date || "") >= sinceDay, back: (t.ts || "") > since && (t.date || "") < sinceDay, chk: t.type === "income" ? counted(t) : -counted(t), sav: 0});
     for (const g of S.goals) for (const e of (g.entries || [])){ if (e.starting) continue; ev.push({id: e.id, at: stamp(e), counted: (e.ts || "") > since && (e.date || "") >= sinceDay, back: (e.ts || "") > since && (e.date || "") < sinceDay, chk: e.direct ? 0 : -num(e.amount), sav: num(e.amount)}); }
     for (const j of (S.accounts.adjustments || [])) ev.push({id: j.id, at: j.ts, counted: false, back: false, chk: j.chk ? round2(j.chk.actual - j.chk.est) : 0, sav: j.sav ? round2(j.sav.actual - j.sav.est) : 0, adj: true});
     ev.sort((x, y) => y.at.localeCompare(x.at));
@@ -1415,7 +1426,7 @@ window.LocalDB = (function(){
     const now = new Date(), y = now.getFullYear(), mo = now.getMonth(), today = now.getDate(), dim = new Date(y, mo + 1, 0).getDate();
     const funIds = new Set(cats().filter((c) => roleOf(c) === "fun").map((c) => c.id));
     const byDay = {};
-    for (const t of m.tx) if (t.type !== "income" && funIds.has(t.categoryId)){ const d = Number(String(t.date).slice(8, 10)); byDay[d] = (byDay[d] || 0) + num(t.amount); }
+    for (const t of m.tx) if (t.type !== "income" && funIds.has(t.categoryId)){ const d = Number(String(t.date).slice(8, 10)); byDay[d] = (byDay[d] || 0) + counted(t); }
     const weeks = []; let st = 1;
     while (st <= dim){ const dow = new Date(y, mo, st).getDay(), e = Math.min(dim, st + (6 - dow)); weeks.push({s: st, e, days: e - st + 1}); st = e + 1; }
     const pool = m.funBudget - m.funCover; let before = 0, cur = null;
@@ -1486,7 +1497,8 @@ window.LocalDB = (function(){
     const rows = [["Date", prettyDate(tx.date, {weekday: "short", month: "short", day: "numeric"})], [inc ? "Paid by" : "Category", title],
       ...(tx.tag ? [["Kind", tx.tag === "food" ? "Ate out" : "Random"]] : []),
       ...(tx.note ? [["Note", tx.note]] : []),
-      ...(fun ? [["Effect", "Pocket money −" + money(amt)]] : num(tx.pocket) > 0 ? [["Effect", "Pocket money −" + money(num(tx.pocket))]] : []),
+      ...(loanPart(tx) ? [[inc ? "Loan money" : "Paid with a loan", money(loanPart(tx)) + " · not counted in budgets"]] : []),
+      ...(fun && counted(tx) > 0 ? [["Effect", "Pocket money −" + money(counted(tx))]] : num(tx.pocket) > 0 ? [["Effect", "Pocket money −" + money(num(tx.pocket))]] : []),
       ...(tr ? [["Checking", money(tr.chk[0]) + " → " + money(tr.chk[1])]] : []),
       ...((tx.edits || []).length ? [["History", "Edited " + tx.edits.length + (tx.edits.length === 1 ? " time" : " times")]] : [])];
     const {close, el} = sheet(inc ? "Paycheck" : "Purchase", `
@@ -1498,11 +1510,40 @@ window.LocalDB = (function(){
     el.querySelector("#dtMore").onclick = () => {
       const box = el.querySelector("#dtMenuBox");
       if (box.innerHTML){ box.innerHTML = ""; return; }
-      box.innerHTML = '<div class="dtMenu"><button type="button" id="dtEdit">Edit entry</button><button type="button" class="del" id="dtDel">Delete entry</button></div>';
+      box.innerHTML = '<div class="dtMenu"><button type="button" id="dtEdit">Edit entry</button><button type="button" id="dtLoan">' + (tx.loan ? "Count it in budgets again" : inc ? "This was loan money" : "Paid with a loan") + '</button><button type="button" class="del" id="dtDel">Delete entry</button></div>';
+      box.querySelector("#dtLoan").onclick = () => { if (tx.loan){ close(); setLoan(tx, 0); } else if (inc){ close(); setLoan(tx, amt); } else loanForm(box, tx, amt, close); };
       box.querySelector("#dtEdit").onclick = () => { close(); openLog(null, tx); };
       box.querySelector("#dtDel").onclick = () => { if (confirm("Delete this entry? This can't be undone.")){ close(); deleteTx(k, tx.id); } };
     };
   }
+  // Mark how much of an entry was paid with borrowed money (0 = count it normally again). Saves a safety copy first.
+  async function setLoan(tx, v){
+    const t = {...tx};
+    if (v > 0) t.loan = round2(Math.min(v, Math.abs(num(tx.amount)))); else delete t.loan;
+    delete t.loanNo;
+    try { if (S.db && S.db.snapshot) await S.db.snapshot("Before marking a loan"); } catch (e){}
+    if (await replaceTx(tx, t)) toast(v > 0 ? "Marked as paid with a loan. Budgets and pocket money no longer count it." : "Counted in budgets again");
+  }
+  function loanForm(box, tx, amt, close){
+    box.innerHTML = `<div class="dtMenu" style="padding:14px;display:flex;flex-direction:column;gap:10px">
+      <label for="loanAmt" style="font-weight:600">How much did the loan cover?</label>
+      <input id="loanAmt" class="field" inputmode="decimal" value="${amt.toFixed(2)}" style="font-size:18px;padding:12px;border-radius:12px;border:0">
+      <span class="sub">If you paid part of it yourself (a down payment or tax), enter only the loan's part. Your part stays in your budget.</span>
+      <button type="button" class="save" id="loanOk">Save</button></div>`;
+    box.querySelector("#loanOk").onclick = () => { const v = round2(num(box.querySelector("#loanAmt").value)); if (!(v > 0)){ toast("Enter the amount the loan paid."); return; } close(); setLoan(tx, v); };
+  }
+  // Big purchases (or deposits) that might have been paid with a loan, in this month or last month, not yet answered.
+  function loanSuspects(){
+    const ks = [monthKey(new Date()), shiftMonth(monthKey(new Date()), -1)], out = [];
+    for (const k of ks) for (const t of (S.months[k] || [])){
+      if (t.loan || t.loanNo || num(t.amount) < 500) continue;
+      if (t.type === "income" ? (t.incomeId && incById(t.incomeId)) : roleOf(catById(t.categoryId) || {}) === "bill") continue;
+      if (t.type === "income" && /door\s*dash/i.test(t.note || "")) continue;
+      out.push({t, k});
+    }
+    return out;
+  }
+
   // Pull down from the top to refresh: checks for a newer app version and re-syncs the bank.
   (function(){
     const ind = document.createElement("div"); ind.className = "ptr"; ind.setAttribute("role", "status"); document.body.appendChild(ind);
@@ -1529,7 +1570,7 @@ window.LocalDB = (function(){
     if (!pn){ toast("Mark a category as Pocket money in Plan first."); return; }
     const extra = m.pocketExtra || 0, budget = round2(m.funBudget - extra);
     const funIds = new Set(cats().filter((c) => roleOf(c) === "fun").map((c) => c.id));
-    const days = []; for (let i = 6; i >= 0; i--){ const d = addDays(todayStart(), -i), key = ymd(d); let v = 0; for (const t of m.tx) if (t.type !== "income" && funIds.has(t.categoryId) && t.date === key) v += num(t.amount); days.push({d, v}); }
+    const days = []; for (let i = 6; i >= 0; i--){ const d = addDays(todayStart(), -i), key = ymd(d); let v = 0; for (const t of m.tx) if (t.type !== "income" && funIds.has(t.categoryId) && t.date === key) v += counted(t); days.push({d, v}); }
     const mx = Math.max(1, ...days.map((x) => x.v));
     const {close, el} = sheet("Pocket money", `
       <div class="pcTop"><span class="sub">Left to spend now</span><b class="pcBig">${money(pn.avail)}</b></div>
@@ -2217,7 +2258,8 @@ window.LocalDB = (function(){
         const c = catById(t.categoryId), inc = t.type === "income", src = inc ? incById(t.incomeId) : null;
         const title = inc ? (src ? src.name : "Income") : (c ? c.name : "Deleted category");
         const tagTxt = t.tag === "food" ? "Ate out" : t.tag === "random" ? "Random" : "";
-        const second = (inc ? ("Income" + (t.note ? " · " + t.note : "")) : ([tagTxt, t.note].filter(Boolean).join(" · ") || (c ? c.group : ""))) + ((t.edits || []).length ? " · edited" : "");
+        const lp = loanPart(t), loanTxt = lp ? (lp >= Math.abs(num(t.amount)) - 0.005 ? " · paid with a loan" : " · " + money(lp) + " paid with a loan") : "";
+        const second = (inc ? ("Income" + (t.note ? " · " + t.note : "")) : ([tagTxt, t.note].filter(Boolean).join(" · ") || (c ? c.group : ""))) + loanTxt + ((t.edits || []).length ? " · edited" : "");
         html += `<button type="button" class="txrow" data-edit-tx="${esc(t.id)}" data-month="${esc(k)}" aria-label="Edit ${esc(title)} ${money(Math.abs(num(t.amount)))}">
           <span class="dot" style="--gc:${inc ? "var(--ok)" : c ? GC[c.group] || "var(--muted)" : "var(--muted)"}"></span>
           <span style="min-width:0"><div class="t1">${esc(title)}</div><div class="t2">${esc(second)}</div>${trl(t.id)}</span>
@@ -2585,6 +2627,7 @@ window.LocalDB = (function(){
         const before = txSnap(ex), after = txSnap(t);
         const changed = JSON.stringify(before) !== JSON.stringify(after);
         t.edits = [...(ex.edits || [])];
+        if (ex.loan) t.loan = ex.loan; if (ex.loanNo) t.loanNo = true;
         if (changed) t.edits.push({at: new Date().toISOString(), before});
         if (!changed){ close(); toast("No changes"); return; }
         if (await replaceTx(ex, t)){ close(); toast("Changes saved"); } else sync();
@@ -3014,6 +3057,8 @@ window.LocalDB = (function(){
       (async () => { try { await S.db.snapshot("Before using a safety copy"); await S.db.importAll(JSON.parse(x.body)); location.reload(); } catch (e){ toast("Restore failed: " + ((e && e.name) || "unknown")); } })();
       return;
     }
+    if ((el = t("[data-loan-yes]"))){ const tx = (S.months[el.dataset.month] || []).find((x) => x.id === el.dataset.loanYes); if (tx){ openTxDetails(tx, el.dataset.month); const m = document.getElementById("dtMore"); if (m){ m.click(); const b = document.getElementById("dtLoan"); if (b) b.click(); } } return; }
+    if ((el = t("[data-loan-no]"))){ const tx = (S.months[el.dataset.month] || []).find((x) => x.id === el.dataset.loanNo); if (tx) replaceTx(tx, {...tx, loanNo: true}); return; }
     if ((el = t("[data-review]"))){ S.revMonth = el.dataset.review; S.tab = "review"; render(); window.scrollTo(0, 0); return; }
     if ((el = t("[data-go]"))){ S.tab = el.dataset.go; render(); window.scrollTo(0, 0); return; }
     if ((el = t("[data-log]"))){ openLog(el.dataset.log); return; }

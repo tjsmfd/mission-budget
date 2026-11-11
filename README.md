@@ -21,7 +21,7 @@ The app saves a copy of your data inside itself once a week (kept for 8 weeks, s
 - Goals can have an exact date, a first checkpoint, and be marked "DoorDash funds this".
 - Log a dash (earned, miles, hours) on Today. Gas is miles / mpg x price (Fusion mpg and gas price are editable). The net after gas counts toward the goal, and the card says how much to earn or how many hours to dash. If you fall behind, it offers to move the gap from pocket money, only with your OK.
 
-Last updated: Nov 8, 2026 · 12:52 PM ET.
+Last updated: Nov 11, 2026 · 5:53 PM ET.
 
 If an update doesn't show: give GitHub about a minute, then fully close and reopen the app once.
 
@@ -79,3 +79,6 @@ The app opens on a fake home screen (pocket money $560 to $650, "On pace", fake 
 
 ## Pace chip symbols
 The status chip under the big number uses a speedometer: needle up = On pace; needle swings right and the chip warms from amber to deep orange as you go further over ("Over pace", color shifts to orange by $150 over); slashed circle = Pocket money used up (orange); triangle = Bill at risk (red).
+
+## Purchases paid with a loan (Nov 2026)
+A big purchase paid with borrowed money (like the Mac) shouldn't come out of pocket money. Tap the entry in History, then ••• > **Paid with a loan**, and enter how much the loan covered. If you paid part yourself (a down payment or tax), only the loan's part is left out, and your part still counts. Today also asks about any purchase or deposit of $500 or more from this month or last month ("Was this paid with a loan?"). Loan money left out this way doesn't count toward budgets, pocket money, Month review or the checking estimate. The loan gets paid back through its own monthly payments. ••• > **Count it in budgets again** undoes it. A safety copy is saved before every change.
