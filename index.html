@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Rosewood</title>
 <script>try{var _t=localStorage.getItem("mb-theme");document.documentElement.setAttribute("data-theme",_t==="classic"||_t==="pro"?_t:"sl")}catch(e){document.documentElement.setAttribute("data-theme","sl")}</script>
-<meta name="mb-build" content="1794437605">
+<meta name="mb-build" content="1794845221">
 <script>
 /* Auto-update: on open and on return to the app, check GitHub for a newer build and reload into it.
    Skips while a sheet is open so it never interrupts you mid-entry. */
-(function(){var B="1794437605";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
+(function(){var B="1794845221";function busy(){return !!document.querySelector(".sheet,[role=dialog]")}
 function chk(){fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){var m=t.match(/name="mb-build" content="(\d+)"/);if(!m||m[1]===B||Number(m[1])<Number(B))return;if(busy())return;try{if(sessionStorage.getItem("mb_rl")===m[1])return;sessionStorage.setItem("mb_rl",m[1])}catch(e){}location.replace(location.pathname+"?v="+m[1])}).catch(function(){})}
 window.rwCheck=function(f){if(f){try{sessionStorage.removeItem("mb_rl")}catch(e){}}chk()};window.addEventListener("load",function(){setTimeout(chk,1500)});document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();
 </script>
@@ -757,7 +757,33 @@ window.LocalDB = (function(){
     return {example: false, income: [{id: uid(), name: "AFROTC Stipend", kind: "fixed", freq: "monthly", amount: 0}, {id: uid(), name: "Dick's Sporting Goods", kind: "varies", freq: "biweekly", amount: 0}], categories: STARTER.map(([name, group]) => ({id: uid(), name, group, budget: 0}))};
   }
   const plan = () => S.plan || starterPlan();
-  const cats = () => (plan().categories || []).filter((c) => c.group !== "Savings");
+  // Loans (config/loans): each loan is a virtual Bill category, so budgets, Bills covered and the Bills sheet count it. Not stored in the plan.
+  const loanCat = (l) => ({id: "loan:" + l.id, name: l.name, group: "Needs", role: "bill", budget: loanBudgetNow(l), loanId: l.id});
+  const loanCats = () => (S.loans || []).map(loanCat);
+  const cats = () => [...(plan().categories || []).filter((c) => c.group !== "Savings"), ...loanCats()];
+  // This month's scheduled loan payments (the budget for the Bills sheet and pacing).
+  function loanBudgetNow(l){ const k = monthKey(new Date()); return round2((l.schedule || []).filter((p) => monthKey(parseD(p.date)) === k).reduce((s, p) => s + num(p.amount), 0)); }
+  // Paid if it was entered as already paid, or it has been posted to History.
+  function loanPaid(l, i){ return i < (l.paidCount || 0) || !!(S.auto && S.auto.posted && S.auto.posted["L:" + l.id + "|" + i]); }
+  // Schedule from the first payment: monthly (same day each month) or every 2 weeks.
+  function loanSchedule(first, freq, amounts){
+    const f = parseD(first), out = [];
+    amounts.forEach((amt, i) => {
+      const d = freq === "biweekly" ? new Date(f.getFullYear(), f.getMonth(), f.getDate() + 14 * i) : dueIn(f.getFullYear(), f.getMonth() + i, f.getDate());
+      out.push({date: ymd(d), amount: round2(amt)});
+    });
+    return out;
+  }
+  // Totals for a loan card: paid and left, the next payment, and the last payment date.
+  function loanSummary(l){
+    const sch = l.schedule || [];
+    let paid = 0, left = 0, leftAmt = 0, next = null;
+    sch.forEach((p, i) => { if (loanPaid(l, i)) paid++; else { left++; leftAmt += num(p.amount); if (!next) next = {...p, i}; } });
+    // Extra payments logged by hand (amounts that match no scheduled payment) reduce what is left.
+    let extra = 0;
+    for (const k in S.months) for (const t of S.months[k] || []) if (t.categoryId === "loan:" + l.id && t.type === "expense" && !t.auto && !sch.some((p) => Math.abs(num(t.amount) - num(p.amount)) <= 1)) extra += num(t.amount);
+    return {paid, left, total: sch.length, leftAmt: Math.max(0, round2(leftAmt - extra)), next, last: sch.length ? sch[sch.length - 1] : null, done: left === 0};
+  }
   const incomes = () => (plan().income || []).map((i) => ({kind: "fixed", freq: "monthly", ...i}));
   const catById = (id) => (plan().categories || []).find((c) => c.id === id);
   const incById = (id) => incomes().find((i) => i.id === id);
@@ -1106,7 +1132,7 @@ window.LocalDB = (function(){
         }
         continue;
       }
-      if (b <= 0) continue;
+      if (c.loanId || b <= 0) continue; // loans are counted from their own schedule below
       const dd = parseInt(c.dueDay, 10);
       const sp = m.spent[c.id] || 0;
       const done = sp >= b * 0.97 || (S.billSkip[k] || []).includes(c.id);
@@ -1114,6 +1140,7 @@ window.LocalDB = (function(){
       if (!done){ let due = dueIn(from.getFullYear(), from.getMonth(), dd); if (due < from) due = from; if (inWin(due)) ev.push({d: due, label: c.name, amt: -(b - sp), kind: 0}); }
       for (let mo = 1; mo <= 2; mo++){ const due = dueIn(from.getFullYear(), from.getMonth() + mo, dd); if (inWin(due) && !(S.billSkip[monthKey(due)] || []).includes(c.id)) ev.push({d: due, label: c.name, amt: -b, kind: 0}); }
     }
+    for (const l of S.loans || []) (l.schedule || []).forEach((p, i) => { const d = parseD(p.date); if (!loanPaid(l, i) && inWin(d)) ev.push({d, label: l.name, note: "loan payment", amt: -num(p.amount), kind: 0}); });
     return {ev, missing};
   }
   // Checking/savings estimated from the last balance update plus anything logged after it.
@@ -2027,7 +2054,7 @@ window.LocalDB = (function(){
   function openBills(){
     const k = monthKey(new Date());
     const m = monthStats(k);
-    const bills = cats().filter((c) => roleOf(c) === "bill");
+    const bills = cats().filter((c) => roleOf(c) === "bill" && (!c.loanId || num(c.budget) > 0));
     let skip = [...(S.billSkip[k] || [])];
     const row = (c) => {
       const left = Math.max(0, num(c.budget) - (m.spent[c.id] || 0));
@@ -2048,6 +2075,74 @@ window.LocalDB = (function(){
       S.billSkip = {...S.billSkip, [k]: skip}; render(); close();
       if (S.db) try { await S.db.doc("config/billskip").set(S.billSkip); } catch (e){ toast("Couldn't save that. Try again."); }
     };
+  }
+
+  // ---------------- loans ----------------
+  function loansHTML(){
+    const list = S.loans || [];
+    let html = '<div class="sechead" style="margin-top:8px"><h2>Loans</h2><span>what is left to pay</span></div>';
+    if (!list.length) html += '<div class="emptycard"><b>No loans yet</b><span class="sub">Add a loan to see what is left and when each payment comes out of checking.</span></div>';
+    for (const l of list){
+      const s = loanSummary(l), pct = s.total ? Math.min(100, (s.paid / s.total) * 100) : 0;
+      const freq = l.freq === "biweekly" ? "every 2 weeks" : "monthly";
+      const label = s.done ? "Paid off" : s.next ? "Next " + prettyDate(s.next.date, {month: "short", day: "numeric"}) + " · " + money(num(s.next.amount)) : "";
+      html += `<section class="goal" aria-label="${esc(l.name)} loan">
+        <div class="top"><div style="min-width:0"><h3>${esc(l.name || "Untitled loan")}</h3><div class="meta">${s.paid} of ${s.total} paid · ${freq}${l.apr ? " · " + esc(l.apr) + " APR" : ""}</div></div>
+          <button type="button" class="iconbtn" data-loan-edit="${esc(l.id)}" aria-label="Edit ${esc(l.name)} loan">${IC.edit}</button></div>
+        <div class="bal">${money(s.leftAmt)} <small>still to pay</small></div>
+        <div class="bar" style="--gc:var(--accent)"><i style="width:${pct}%"></i></div>
+        <div><span class="chipline ${s.done ? "ok" : "info"}">${esc(label)}</span>${s.last ? ` <span class="meta">&nbsp;Last payment ${esc(prettyDate(s.last.date, {month: "short", day: "numeric", year: "numeric"}))}</span>` : ""}</div>
+      </section>`;
+    }
+    return html + '<button type="button" class="addbtn" data-loan-add>+ Add a loan</button>';
+  }
+  async function saveLoans(next){
+    S.loans = next;
+    if (S.db && S.db.snapshot) try { await S.db.snapshot("Before a loan change"); } catch (e){}
+    render();
+    if (S.db) try { await S.db.doc("config/loans").set({items: S.loans}); } catch (e){ toast("Couldn't save loans. Try again."); }
+  }
+  function openLoanEdit(x){
+    const isNew = !x, sch = x ? x.schedule || [] : [];
+    const uniform = sch.every((p) => num(p.amount) === num(sch[0] && sch[0].amount));
+    const d = x ? {name: x.name, total: x.total, freq: x.freq || "monthly", first: x.first || (sch[0] && sch[0].date) || "", count: sch.length, pay: sch[0] ? sch[0].amount : "", paid: x.paidCount || 0, apr: x.apr || "", list: uniform ? "" : sch.map((p) => p.amount).join(", ")} : {name: "", total: "", freq: "monthly", first: "", count: "", pay: "", paid: 0, apr: "", list: ""};
+    const {close, el} = sheet(isNew ? "Add a loan" : "Edit loan", `
+      <div><label class="lab" for="lname">Name</label><input class="field" id="lname" value="${esc(d.name)}" placeholder="e.g. Mac" autocomplete="off"></div>
+      <div class="row2">
+        <div><label class="lab" for="ltot">Amount borrowed</label><input class="field num" id="ltot" inputmode="decimal" value="${num(d.total) || ""}" placeholder="$0"></div>
+        <div><label class="lab" for="lapr">APR (optional)</label><input class="field num" id="lapr" inputmode="decimal" value="${esc(d.apr)}" placeholder="0%"></div>
+      </div>
+      <div class="row2">
+        <div><label class="lab" for="lfreq">How often</label><select class="field" id="lfreq"><option value="monthly"${d.freq === "monthly" ? " selected" : ""}>Monthly</option><option value="biweekly"${d.freq === "biweekly" ? " selected" : ""}>Every 2 weeks</option></select></div>
+        <div><label class="lab" for="lpay">Payment amount</label><input class="field num" id="lpay" inputmode="decimal" value="${num(d.pay) || ""}" placeholder="$0"></div>
+      </div>
+      <div class="row2">
+        <div><label class="lab" for="lfirst">First payment date</label><input class="field" id="lfirst" type="date" value="${esc(d.first)}"></div>
+        <div><label class="lab" for="lcount">Number of payments</label><input class="field num" id="lcount" inputmode="numeric" value="${d.count || ""}" placeholder="—"></div>
+      </div>
+      <div><label class="lab" for="lpaid">Payments already made</label><input class="field num" id="lpaid" inputmode="numeric" value="${d.paid}" placeholder="0"></div>
+      <div><label class="lab" for="lamts">Exact amounts (only if they differ)</label><input class="field" id="lamts" value="${esc(d.list)}" placeholder="34.43, 34.44, 34.44, …" autocomplete="off"><p class="hint" style="margin:6px 0 0">One amount per payment, comma-separated, in order. Leave blank if every payment is the same.</p></div>
+      <button type="button" class="save" id="lsave">${isNew ? "Add loan" : "Save changes"}</button>
+      ${isNew ? "" : '<button type="button" class="dangerbtn" id="ldel">Delete loan</button>'}`);
+    el.querySelector("#lsave").onclick = () => {
+      const name = el.querySelector("#lname").value.trim(); if (!name){ el.querySelector("#lname").focus(); return; }
+      const first = el.querySelector("#lfirst").value, n = parseInt(el.querySelector("#lcount").value, 10);
+      const pay = round2(num(el.querySelector("#lpay").value)), paid = Math.max(0, parseInt(el.querySelector("#lpaid").value, 10) || 0);
+      const raw = el.querySelector("#lamts").value.trim(), list = raw ? raw.split(/[\s,]+/).filter(Boolean).map(Number) : [];
+      if (!first || !(n >= 1 && n <= 120)){ toast("Enter the first payment date and how many payments there are."); return; }
+      if (list.length && (list.length !== n || list.some((a) => !(a > 0)))){ toast("The amounts list needs exactly " + n + " amounts."); return; }
+      if (!list.length && !(pay > 0)){ toast("Enter the payment amount."); return; }
+      const item = {id: x ? x.id : uid(), name, total: round2(num(el.querySelector("#ltot").value)), freq: el.querySelector("#lfreq").value, first, paidCount: Math.min(paid, n), apr: el.querySelector("#lapr").value.trim(), schedule: loanSchedule(first, el.querySelector("#lfreq").value, list.length ? list : Array(n).fill(pay))};
+      close(); saveLoans(x ? S.loans.map((l) => l.id === x.id ? item : l) : [...(S.loans || []), item]); toast(isNew ? "Loan added" : "Saved");
+    };
+    if (!isNew){
+      const del = el.querySelector("#ldel");
+      del.onclick = () => {
+        if (!del.classList.contains("armed")){ del.classList.add("armed"); del.textContent = "Tap again to delete"; return; }
+        close(); saveLoans(S.loans.filter((l) => l.id !== x.id)); toast("Loan deleted. Its past payments stay in History.");
+      };
+    }
+    if (isNew) setTimeout(() => el.querySelector("#lname").focus(), 50);
   }
 
   // ---------------- goals ----------------
@@ -2092,6 +2187,7 @@ window.LocalDB = (function(){
         <div class="acts"><button type="button" class="pillbtn" data-goal-add="${esc(g.id)}">Add money</button><button type="button" class="pillbtn ghost" data-goal-use="${esc(g.id)}">Take money out</button></div>
       </section>`;
     }
+    html += loansHTML();
     html += '<button type="button" class="addbtn" id="newGoal">+ New goal or set-aside</button>';
     app.innerHTML = html;
     document.getElementById("newGoal").onclick = () => openGoalEdit(null);
@@ -3065,6 +3161,8 @@ window.LocalDB = (function(){
     if ((el = t("[data-step]"))){ toggleStep(el.dataset.step); return; }
     if ((el = t("[data-accounts]"))){ openAccounts(); return; }
     if ((el = t("[data-bills]"))){ openBills(); return; }
+    if ((el = t("[data-loan-add]"))){ openLoanEdit(null); return; }
+    if ((el = t("[data-loan-edit]"))){ openLoanEdit(S.loans.find((x) => x.id === el.dataset.loanEdit)); return; }
     if ((el = t("[data-sub-add]"))){ openSubEdit(null); return; }
     if ((el = t("[data-sub-edit]"))){ openSubEdit(S.subsList.find((s) => s.id === el.dataset.subEdit)); return; }
     if ((el = t("[data-sub-match]"))){
@@ -3153,6 +3251,12 @@ window.LocalDB = (function(){
           const dd = parseInt(c.dueDay, 10), b = num(c.budget); if (!dd || b <= 0) continue;
           add("c:" + c.id + "|" + k, dueIn(y, mo, dd), b, c, c.name, (L) => L.filter((t) => t.type === "expense" && t.categoryId === c.id).reduce((a, t) => a + num(t.amount), 0) >= b * 0.97);
         }
+        // Loans: each scheduled payment posts on its date. Stops by itself after the last one.
+        for (const l of S.loans || []) (l.schedule || []).forEach((p, i) => {
+          if (!p.date.startsWith(k)) return;
+          const c = {id: "loan:" + l.id, name: l.name}, amt = num(p.amount), due = parseD(p.date);
+          add("L:" + l.id + "|" + i, due, amt, c, l.name, (L) => L.some((t) => t.type === "expense" && t.categoryId === c.id && Math.abs((parseD(t.date) - due) / 864e5) <= 4 && Math.abs(num(t.amount) - amt) <= 1));
+        });
       }
       for (const k in byMonth){ S.months[k] = byMonth[k]; await S.db.doc("months/" + k).set({tx: byMonth[k]}); }
       const next = {on: true, since: sinceD, posted};
@@ -3192,6 +3296,10 @@ window.LocalDB = (function(){
     db.doc("config/subs").onSnapshot((snap) => {
       S.subsList = snap.exists ? JSON.parse(JSON.stringify((snap.data() || {}).items || [])) : [];
       if (S.tab !== "plan") render(); else { const box = document.getElementById("subsBox"); if (box) box.innerHTML = subsBoxHTML(); }
+    }, () => {});
+    db.doc("config/loans").onSnapshot((snap) => {
+      S.loans = snap.exists ? JSON.parse(JSON.stringify((snap.data() || {}).items || [])) : [];
+      if (S.tab !== "plan") render(); else refreshPlanSummary();
     }, () => {});
     db.doc("config/billskip").onSnapshot((snap) => {
       S.billSkip = snap.exists ? JSON.parse(JSON.stringify(snap.data())) : {};

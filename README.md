@@ -21,7 +21,7 @@ The app saves a copy of your data inside itself once a week (kept for 8 weeks, s
 - Goals can have an exact date, a first checkpoint, and be marked "DoorDash funds this".
 - Log a dash (earned, miles, hours) on Today. Gas is miles / mpg x price (Fusion mpg and gas price are editable). The net after gas counts toward the goal, and the card says how much to earn or how many hours to dash. If you fall behind, it offers to move the gap from pocket money, only with your OK.
 
-Last updated: Nov 11, 2026 · 5:53 PM ET.
+Last updated: Nov 16, 2026 · 11:07 AM ET.
 
 If an update doesn't show: give GitHub about a minute, then fully close and reopen the app once.
 
@@ -82,3 +82,12 @@ The status chip under the big number uses a speedometer: needle up = On pace; ne
 
 ## Purchases paid with a loan (Nov 2026)
 A big purchase paid with borrowed money (like the Mac) shouldn't come out of pocket money. Tap the entry in History, then ••• > **Paid with a loan**, and enter how much the loan covered. If you paid part yourself (a down payment or tax), only the loan's part is left out, and your part still counts. Today also asks about any purchase or deposit of $500 or more from this month or last month ("Was this paid with a loan?"). Loan money left out this way doesn't count toward budgets, pocket money, Month review or the checking estimate. The loan gets paid back through its own monthly payments. ••• > **Count it in budgets again** undoes it. A safety copy is saved before every change.
+
+## Loans (Goals tab, Nov 2026)
+Goals → **Loans** → **+ Add a loan**. Enter the name, amount borrowed, APR (optional), how often you pay (monthly or every 2 weeks), the first payment date, the number of payments, the payment amount, and how many you've already made. If the payments aren't all the same, use "Exact amounts" and list one amount per payment, in order.
+- Each loan card shows payments made, what's still to pay, the next payment and the last payment date.
+- Loan payments count as bills: they're held back from checking before Free to spend is checked, and each one posts to History on its due date. The loan stops posting after its last payment.
+- Payments you've already made are marked paid and don't come out of checking again.
+- Extra payments: log them by hand in History under the loan's category. They reduce what's still to pay.
+- Each loan appears in the Bills sheet only in months it has a payment.
+- Not built yet: a payoff timeline and "what if I pay extra" scenarios.
